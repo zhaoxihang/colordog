@@ -14,7 +14,8 @@ interface PuzzleManifest {
   }
 }
 
-const MANIFEST_URL = '/puzzles/manifest.json'
+const BASE_URL = import.meta.env.BASE_URL
+const MANIFEST_URL = `${BASE_URL}puzzles/manifest.json`
 const PLAYED_KEY = 'colordog.playedPuzzles'
 
 let manifestCache: PuzzleManifest | null = null
@@ -76,7 +77,7 @@ export async function loadRandomPuzzle(n: number, mode: GameMode): Promise<Store
   if (!name) return null
 
   try {
-    const response = await fetch(`/puzzles/${name}`, { cache: 'no-cache' })
+    const response = await fetch(`${BASE_URL}puzzles/${name}`, { cache: 'no-cache' })
     if (!response.ok) return null
     const puzzle = await response.json() as StoredPuzzle
     if (puzzle.n !== n || puzzle.mode !== mode || puzzle.colorGrid.length !== n || puzzle.cows.length !== n) {
