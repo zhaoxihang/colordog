@@ -5,8 +5,11 @@ import Inspector from 'unplugin-vue-dev-locator/vite'
 import traeBadgePlugin from 'vite-plugin-trae-solo-badge'
 
 // https://vite.dev/config/
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'colordog'
+const isUserSite = repoName.endsWith('.github.io')
+
 export default defineConfig({
-  base: '/colordog/',
+  base: isUserSite ? '/' : `/${repoName}/`,
   server: {
     host: '0.0.0.0',
   },
