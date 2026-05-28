@@ -1,6 +1,4 @@
-import type { CellState } from './cowPlacer'
-
-const HINT_COLOR_NAMES = Array.from({ length: 15 }, (_, idx) => `颜色${idx + 1}`)
+import { COLOR_NAMES, type CellState } from './cowPlacer'
 
 export interface HintInfo {
   ruleName: string
@@ -144,7 +142,7 @@ function findSharedAdjacent(board: BoardView, a: [number, number], b: [number, n
 }
 
 function colorName(idx: number): string {
-  return HINT_COLOR_NAMES[idx] || `颜色${idx + 1}`
+  return COLOR_NAMES[idx] || `颜色${idx + 1}`
 }
 
 export function getHint(board: BoardView): HintInfo | null {

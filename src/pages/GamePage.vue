@@ -5,6 +5,7 @@ import GameGrid from '@/components/GameGrid.vue'
 import StatusBar from '@/components/StatusBar.vue'
 import WinModal from '@/components/WinModal.vue'
 import { useGame, type HintInfo } from '@/composables/useGame'
+import { COLORS, COLOR_NAMES } from '@/utils/cowPlacer'
 
 const router = useRouter()
 const {
@@ -119,6 +120,20 @@ function isHintCell(r: number, c: number): boolean {
   return hintCellsSet.value.has(`${r},${c}`)
 }
 
+function colorizeDescription(desc: string): string {
+  let result = desc
+  const sorted = [...COLOR_NAMES]
+    .map((name, idx) => ({ name, idx }))
+    .filter(({ name }) => result.includes(name))
+    .sort((a, b) => b.name.length - a.name.length)
+  for (const { name, idx } of sorted) {
+    result = result.split(name).join(
+      `<span style="color:${COLORS[idx]};font-weight:700;text-shadow:0 0 6px ${COLORS[idx]}66">${name}</span>`
+    )
+  }
+  return result
+}
+
 onMounted(() => {
   ensureGameStarted()
   window.addEventListener('mouseup', handleGlobalMouseUp)
@@ -174,7 +189,7 @@ onUnmounted(() => {
         >
           <div class="hint-info">
             <span class="hint-rule" :class="currentHint.type">{{ currentHint.ruleName }}</span>
-            <span class="hint-desc">{{ currentHint.description }}</span>
+            <span class="hint-desc" v-html="colorizeDescription(currentHint.description)" />
           </div>
           <div class="hint-actions">
             <button
