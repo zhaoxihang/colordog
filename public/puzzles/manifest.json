@@ -1,0 +1,68 @@
+{
+  "easy": {
+    "4": [
+      "easy-4-001.json",
+      "easy-4-002.json",
+      "easy-4-003.json",
+      "easy-4-004.json",
+      "easy-4-005.json"
+    ],
+    "5": [
+      "easy-5-001.json",
+      "easy-5-002.json",
+      "easy-5-003.json",
+      "easy-5-004.json",
+      "easy-5-005.json"
+    ],
+    "6": [
+      "easy-6-001.json",
+      "easy-6-002.json",
+      "easy-6-003.json",
+      "easy-6-004.json",
+      "easy-6-005.json"
+    ],
+    "7": [
+      "easy-7-001.json",
+      "easy-7-002.json",
+      "easy-7-003.json",
+      "easy-7-004.json",
+      "easy-7-005.json"
+    ],
+    "8": [
+      "easy-8-001.json",
+      "easy-8-002.json",
+      "easy-8-003.json",
+      "easy-8-004.json",
+      "easy-8-005.json"
+    ],
+    "9": [
+      "easy-9-001.json",
+      "easy-9-002.json",
+      "easy-9-003.json",
+      "easy-9-004.json",
+      "easy-9-005.json"
+    ],
+    "10": [
+      "easy-10-001.json",
+      "easy-10-002.json",
+      "easy-10-003.json",
+      "easy-10-004.json",
+      "easy-10-005.json"
+    ],
+    "11": [
+      "easy-11-001.json",
+      "easy-11-002.json",
+      "easy-11-003.json",
+      "easy-11-004.json",
+      "easy-11-005.json"
+    ],
+    "12": [
+      "easy-12-001.json",
+      "easy-12-002.json",
+      "easy-12-003.json",
+      "easy-12-004.json",
+      "easy-12-005.json"
+    ]
+  },
+  "hard": {}
+}
