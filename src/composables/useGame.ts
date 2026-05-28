@@ -23,6 +23,7 @@ let dragMode: 'flag' | 'unflag' = 'flag'
 let lastTapRow = -1
 let lastTapCol = -1
 let lastTapTime = 0
+let initialized = false
 
 export function useGame() {
   const n = computed(() => state.value.n)
@@ -62,6 +63,12 @@ export function useGame() {
     const puzzle = await loadRandomPuzzle(size, 'easy')
     state.value = puzzle ? buildGameFromPuzzle(puzzle) : createGameState(size, 'easy')
     showWin.value = false
+  }
+
+  function ensureGameStarted() {
+    if (initialized) return
+    initialized = true
+    void startGame()
   }
 
   function toggleFlag(row: number, col: number) {
@@ -269,6 +276,7 @@ export function useGame() {
     progress,
     isVip,
     startGame,
+    ensureGameStarted,
     toggleFlag,
     revealCell,
     flagCell,

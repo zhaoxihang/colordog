@@ -16,6 +16,7 @@ const {
   showWin,
   isVip,
   startGame,
+  ensureGameStarted,
   startDrag,
   dragOver,
   endDrag,
@@ -119,6 +120,7 @@ function isHintCell(r: number, c: number): boolean {
 }
 
 onMounted(() => {
+  ensureGameStarted()
   window.addEventListener('mouseup', handleGlobalMouseUp)
   window.addEventListener('touchend', handleGlobalTouchEnd)
 })
