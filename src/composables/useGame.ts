@@ -1,7 +1,12 @@
 import { ref, computed } from 'vue'
 import { createGameState, COLORS, type GameState, type CellState, type GameMode } from '@/utils/cowPlacer'
 import { getHint as computeHint, type HintInfo } from '@/utils/hintRules'
-import { loadRandomPuzzle, type StoredPuzzle } from '@/utils/puzzleLibrary'
+import {
+  getAvailableSizes,
+  loadRandomPuzzle,
+  loadRandomPuzzleAny,
+  type StoredPuzzle,
+} from '@/utils/puzzleLibrary'
 
 export type { HintInfo }
 
@@ -12,8 +17,9 @@ export interface PuzzleJSON {
   cows: [number, number][]
 }
 
-const state = ref<GameState>(createGameState(5, 'easy'))
+const state = ref<GameState>(createGameState(5, 'easy', { hintCheck: false, layout: 'grow' }))
 const showWin = ref(false)
+const isStartingGame = ref(false)
 const isVip = ref(false)
 const isDragging = ref(false)
 let dragMoved = false
@@ -24,6 +30,26 @@ let lastTapRow = -1
 let lastTapCol = -1
 let lastTapTime = 0
 let initialized = false
+let startToken = 0
+let winTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearWinTimer() {
+  if (winTimer) {
+    clearTimeout(winTimer)
+    winTimer = null
+  }
+}
+
+function resetInteractionState() {
+  clearWinTimer()
+  isDragging.value = false
+  dragMoved = false
+  dragStartRow = -1
+  dragStartCol = -1
+  lastTapRow = -1
+  lastTapCol = -1
+  lastTapTime = 0
+}
 
 export function useGame() {
   const n = computed(() => state.value.n)
@@ -59,10 +85,46 @@ export function useGame() {
   }
 
   async function startGame(customN?: number) {
-    const size = customN ?? Math.floor(Math.random() * 12) + 4
-    const puzzle = await loadRandomPuzzle(size, 'easy')
-    state.value = puzzle ? buildGameFromPuzzle(puzzle) : createGameState(size, 'easy')
+    const token = ++startToken
     showWin.value = false
+    resetInteractionState()
+    isStartingGame.value = true
+
+    try {
+      let puzzle: StoredPuzzle | null = null
+
+      if (customN !== undefined) {
+        puzzle = await loadRandomPuzzle(customN, 'easy')
+      } else {
+        puzzle = await loadRandomPuzzleAny('easy')
+      }
+
+      if (token !== startToken) return
+
+      if (puzzle) {
+        state.value = buildGameFromPuzzle(puzzle)
+        return
+      }
+
+      const sizes = await getAvailableSizes('easy')
+      const fallbackSize = customN
+        ?? (sizes.length > 0
+          ? sizes[Math.floor(Math.random() * sizes.length)]
+          : 5)
+
+      if (token !== startToken) return
+
+      // 无题库时快速生成，避免同步 hintCheck 卡死主线程
+      state.value = createGameState(fallbackSize, 'easy', {
+        hintCheck: false,
+        layout: 'grow',
+      })
+    } finally {
+      if (token === startToken) {
+        isStartingGame.value = false
+        showWin.value = false
+      }
+    }
   }
 
   function ensureGameStarted() {
@@ -101,8 +163,12 @@ export function useGame() {
       autoFlagAroundCow(row, col)
       if (state.value.cowsFound >= state.value.totalCows) {
         state.value.isWon = true
-        setTimeout(() => {
-          showWin.value = true
+        clearWinTimer()
+        winTimer = setTimeout(() => {
+          winTimer = null
+          if (state.value.isWon) {
+            showWin.value = true
+          }
         }, 500)
       }
     } else {
@@ -215,6 +281,7 @@ export function useGame() {
 
       state.value = buildGameFromPuzzle({ id: 'imported', ...puzzle })
       showWin.value = false
+      resetInteractionState()
       return true
     } catch {
       return false
@@ -268,6 +335,7 @@ export function useGame() {
   return {
     state,
     showWin,
+    isStartingGame,
     n,
     grid,
     cowsFound,

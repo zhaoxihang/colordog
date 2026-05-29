@@ -1,6 +1,6 @@
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { createGameState, type GameMode, type GameState } from '../src/utils/cowPlacer'
-import { isHintSolvable } from '../src/utils/hintRules'
+import { hasUniqueCowPlacement, isHintSolvable } from '../src/utils/hintRules'
 
 interface StoredPuzzle {
   id: string
@@ -20,6 +20,8 @@ const sizes = (process.env.PUZZLE_SIZES ?? '4,5,6,7,8,9,10,11,12,13,14,15')
   .filter((value) => Number.isInteger(value) && value >= 4 && value <= 15)
 const countPerSize = Number(process.env.PUZZLE_COUNT ?? 5)
 const maxAttemptsPerPuzzle = Number(process.env.PUZZLE_ATTEMPTS ?? 30)
+/** 为 1 时跳过「整盘唯一放牛方案」预检（更快，但可能产生多解棋盘） */
+const skipUniqueCheck = process.env.PUZZLE_SKIP_UNIQUE === '1'
 
 function toPuzzle(game: GameState, id: string): StoredPuzzle {
   const colorGrid: number[][] = []
@@ -108,10 +110,46 @@ async function findNextPuzzleIndex(manifest: Manifest, mode: GameMode, n: number
   return index
 }
 
+async function generateOnePuzzle(
+  mode: GameMode,
+  n: number,
+  id: string,
+): Promise<StoredPuzzle | null> {
+  for (let attempt = 1; attempt <= maxAttemptsPerPuzzle; attempt++) {
+    let game: GameState
+    try {
+      // grow 着色 + 唯一解在布局阶段筛选（蛇形 n≥4 恒为多解，会 30/30 失败）
+      game = createGameState(n, mode, {
+        hintCheck: false,
+        layout: 'grow',
+        requireUnique: !skipUniqueCheck,
+      })
+    } catch {
+      console.log(`layout retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`)
+      continue
+    }
+
+    if (!skipUniqueCheck && !hasUniqueCowPlacement(game)) {
+      console.log(`non-unique retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`)
+      continue
+    }
+
+    if (!isHintSolvable(game)) {
+      console.log(`hint retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`)
+      continue
+    }
+
+    return toPuzzle(game, id)
+  }
+
+  return null
+}
+
 async function main() {
   await mkdir(outputDir, { recursive: true })
 
   const manifest = await loadExistingManifest()
+  const startedAt = Date.now()
 
   for (const mode of modes) {
     for (const n of sizes) {
@@ -121,19 +159,10 @@ async function main() {
         const index = await findNextPuzzleIndex(manifest, mode, n)
         const id = puzzleId(mode, n, index)
         const fileName = puzzleFileName(mode, n, index)
-        let puzzle: StoredPuzzle | null = null
 
-        for (let attempt = 1; attempt <= maxAttemptsPerPuzzle; attempt++) {
-          const game = createGameState(n, mode)
-          if (isHintSolvable(game)) {
-            puzzle = toPuzzle(game, id)
-            break
-          }
-          console.log(`retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`)
-        }
-
+        const puzzle = await generateOnePuzzle(mode, n, id)
         if (!puzzle) {
-          throw new Error(`${id} could not pass hint-chain validation after ${maxAttemptsPerPuzzle} attempts`)
+          throw new Error(`${id} failed after ${maxAttemptsPerPuzzle} attempts`)
         }
 
         if (await fileExists(fileName)) {
@@ -143,19 +172,20 @@ async function main() {
         await writeFile(
           `${outputDir}/${fileName}`,
           `${JSON.stringify(puzzle, null, 2)}\n`,
-          'utf8'
+          'utf8',
         )
         if (!manifest[mode][String(n)].includes(fileName)) {
           manifest[mode][String(n)].push(fileName)
         }
-        await writeManifest(manifest)
         console.log(`wrote ${fileName}`)
       }
+
+      await writeManifest(manifest)
     }
   }
 
-  await writeManifest(manifest)
-  console.log(`wrote ${outputDir}/manifest.json`)
+  const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1)
+  console.log(`wrote ${outputDir}/manifest.json (${elapsed}s)`)
 }
 
 main().catch((error) => {

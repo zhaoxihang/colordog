@@ -1,6 +1,3 @@
-// scripts/generate-puzzles.ts
-import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-
 // src/utils/hintRules.ts
 function getActiveCells(board, colorIdx) {
   const cells = [];
@@ -784,13 +781,13 @@ function shuffle(arr) {
   }
   return a;
 }
-function generateTargetSizes(n) {
-  const total = n * n;
-  if (n >= 8) {
-    const smallRegionCount = Math.min(3, n - 1);
+function generateTargetSizes(n2) {
+  const total = n2 * n2;
+  if (n2 >= 8) {
+    const smallRegionCount = Math.min(3, n2 - 1);
     const targets2 = Array.from({ length: smallRegionCount }, () => 2 + Math.floor(Math.random() * 2));
     let remaining2 = total - targets2.reduce((sum, size) => sum + size, 0);
-    const largeRegionCount = n - smallRegionCount;
+    const largeRegionCount = n2 - smallRegionCount;
     for (let i = 0; i < largeRegionCount; i++) {
       if (i === largeRegionCount - 1) {
         targets2.push(remaining2);
@@ -809,11 +806,11 @@ function generateTargetSizes(n) {
   }
   const targets = [];
   let remaining = total;
-  for (let i = 0; i < n; i++) {
-    if (i === n - 1) {
+  for (let i = 0; i < n2; i++) {
+    if (i === n2 - 1) {
       targets.push(remaining);
     } else {
-      const left = n - i;
+      const left = n2 - i;
       const avg = remaining / left;
       const minSize = 1;
       const maxSize = Math.min(remaining - minSize * (left - 1), Math.ceil(avg * 2.2));
@@ -826,13 +823,13 @@ function generateTargetSizes(n) {
   }
   return shuffle(targets);
 }
-function growRegions(n, dirs) {
-  const colorOf = Array.from({ length: n }, () => Array(n).fill(-1));
+function growRegions(n2, dirs) {
+  const colorOf = Array.from({ length: n2 }, () => Array(n2).fill(-1));
   const seeds = [];
   const used = /* @__PURE__ */ new Set();
-  while (seeds.length < n) {
-    const r = Math.floor(Math.random() * n);
-    const c = Math.floor(Math.random() * n);
+  while (seeds.length < n2) {
+    const r = Math.floor(Math.random() * n2);
+    const c = Math.floor(Math.random() * n2);
     const key = `${r},${c}`;
     if (!used.has(key)) {
       used.add(key);
@@ -840,25 +837,25 @@ function growRegions(n, dirs) {
       colorOf[r][c] = seeds.length - 1;
     }
   }
-  const targetSizes = generateTargetSizes(n);
-  const regionSize = new Array(n).fill(1);
+  const targetSizes = generateTargetSizes(n2);
+  const regionSize = new Array(n2).fill(1);
   const frontierMap = /* @__PURE__ */ new Map();
   function addFrontier(r, c, colorIdx) {
     for (const [dr, dc] of dirs) {
       const nr = r + dr;
       const nc = c + dc;
-      if (nr >= 0 && nr < n && nc >= 0 && nc < n && colorOf[nr][nc] === -1) {
+      if (nr >= 0 && nr < n2 && nc >= 0 && nc < n2 && colorOf[nr][nc] === -1) {
         const key = `${nr},${nc}`;
         if (!frontierMap.has(key)) frontierMap.set(key, /* @__PURE__ */ new Set());
         frontierMap.get(key).add(colorIdx);
       }
     }
   }
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < n2; i++) {
     addFrontier(seeds[i][0], seeds[i][1], i);
   }
-  let totalAssigned = n;
-  const target = n * n;
+  let totalAssigned = n2;
+  const target = n2 * n2;
   while (totalAssigned < target) {
     if (frontierMap.size === 0) return null;
     let bestKey = "";
@@ -897,17 +894,17 @@ function growRegions(n, dirs) {
   }
   return colorOf;
 }
-function placeCowsInRegions(n, colorOf) {
-  const rowOrder = shuffle(Array.from({ length: n }, (_, i) => i));
-  const cowColForRow = new Array(n).fill(-1);
+function placeCowsInRegions(n2, colorOf) {
+  const rowOrder = shuffle(Array.from({ length: n2 }, (_, i) => i));
+  const cowColForRow = new Array(n2).fill(-1);
   const usedCols = /* @__PURE__ */ new Set();
   const usedColors = /* @__PURE__ */ new Set();
   const placedCows = [];
   function tryRow(idx) {
-    if (idx === n) return true;
+    if (idx === n2) return true;
     const row = rowOrder[idx];
     const cellsInRow = [];
-    for (let c = 0; c < n; c++) {
+    for (let c = 0; c < n2; c++) {
       if (!usedCols.has(c) && !usedColors.has(colorOf[row][c])) {
         cellsInRow.push({ c, color: colorOf[row][c] });
       }
@@ -935,34 +932,34 @@ function placeCowsInRegions(n, colorOf) {
     return false;
   }
   if (tryRow(0)) {
-    const result = new Array(n).fill(0);
-    for (let r = 0; r < n; r++) {
+    const result = new Array(n2).fill(0);
+    for (let r = 0; r < n2; r++) {
       result[r] = cowColForRow[r];
     }
     return result;
   }
   return null;
 }
-function createSnakeColorOf(n) {
-  const colorOf = Array.from({ length: n }, () => Array(n).fill(-1));
+function createSnakeColorOf(n2) {
+  const colorOf = Array.from({ length: n2 }, () => Array(n2).fill(-1));
   const path = [];
-  for (let r = 0; r < n; r++) {
+  for (let r = 0; r < n2; r++) {
     if (r % 2 === 0) {
-      for (let c = 0; c < n; c++) path.push([r, c]);
+      for (let c = 0; c < n2; c++) path.push([r, c]);
     } else {
-      for (let c = n - 1; c >= 0; c--) path.push([r, c]);
+      for (let c = n2 - 1; c >= 0; c--) path.push([r, c]);
     }
   }
   for (let i = 0; i < path.length; i++) {
     const [r, c] = path[i];
-    colorOf[r][c] = Math.floor(i / n);
+    colorOf[r][c] = Math.floor(i / n2);
   }
   return colorOf;
 }
-function buildGameState(n, mode, colorOf, cowCols) {
+function buildGameState(n2, mode, colorOf, cowCols) {
   const grid = Array.from(
-    { length: n },
-    (_, r) => Array.from({ length: n }, (_2, c) => ({
+    { length: n2 },
+    (_, r) => Array.from({ length: n2 }, (_2, c) => ({
       colorIndex: colorOf[r][c],
       hasCow: cowCols[r] === c,
       isRevealed: false,
@@ -971,11 +968,11 @@ function buildGameState(n, mode, colorOf, cowCols) {
     }))
   );
   return {
-    n,
+    n: n2,
     mode,
     grid,
     cowsFound: 0,
-    totalCows: n,
+    totalCows: n2,
     isWon: false,
     guessHintsUsed: 0
   };
@@ -987,7 +984,7 @@ function acceptGame(game, hintCheck, requireUnique) {
   if (!passesUnique(game, requireUnique)) return false;
   return !hintCheck || isHintSolvable(game);
 }
-function createGameState(n, mode = "hard", options) {
+function createGameState(n2, mode = "hard", options) {
   const hintCheck = options?.hintCheck !== false;
   const requireUnique = options?.requireUnique === true;
   const layout = options?.layout ?? "any";
@@ -996,21 +993,21 @@ function createGameState(n, mode = "hard", options) {
   const maxGrow = hintCheck ? 80 : requireUnique ? 600 : 120;
   const trySnake = () => {
     for (let retry = 0; retry < maxSnake; retry++) {
-      const colorOf2 = createSnakeColorOf(n);
-      const cowCols = placeCowsInRegions(n, colorOf2);
+      const colorOf2 = createSnakeColorOf(n2);
+      const cowCols = placeCowsInRegions(n2, colorOf2);
       if (!cowCols) continue;
-      const game = buildGameState(n, mode, colorOf2, cowCols);
+      const game = buildGameState(n2, mode, colorOf2, cowCols);
       if (acceptGame(game, hintCheck, requireUnique)) return game;
     }
     return null;
   };
   const tryGrow = () => {
     for (let retry = 0; retry < maxGrow; retry++) {
-      const colorOf2 = growRegions(n, dirs);
+      const colorOf2 = growRegions(n2, dirs);
       if (!colorOf2) continue;
-      const cowCols = placeCowsInRegions(n, colorOf2);
+      const cowCols = placeCowsInRegions(n2, colorOf2);
       if (!cowCols) continue;
-      const game = buildGameState(n, mode, colorOf2, cowCols);
+      const game = buildGameState(n2, mode, colorOf2, cowCols);
       if (acceptGame(game, hintCheck, requireUnique)) return game;
     }
     return null;
@@ -1021,12 +1018,12 @@ function createGameState(n, mode = "hard", options) {
     if (game) return game;
   }
   if (!hintCheck) {
-    throw new Error(`\u65E0\u6CD5\u5728\u9650\u5B9A\u6B21\u6570\u5185\u751F\u6210 n=${n} \u7684\u68CB\u76D8\u5E03\u5C40`);
+    throw new Error(`\u65E0\u6CD5\u5728\u9650\u5B9A\u6B21\u6570\u5185\u751F\u6210 n=${n2} \u7684\u68CB\u76D8\u5E03\u5C40`);
   }
-  const colorOf = createSnakeColorOf(n);
+  const colorOf = createSnakeColorOf(n2);
   const grid = Array.from(
-    { length: n },
-    (_, r) => Array.from({ length: n }, (_2, c) => ({
+    { length: n2 },
+    (_, r) => Array.from({ length: n2 }, (_2, c) => ({
       colorIndex: colorOf[r][c],
       hasCow: false,
       isRevealed: false,
@@ -1034,154 +1031,48 @@ function createGameState(n, mode = "hard", options) {
       isWrong: false
     }))
   );
-  for (let r = 0; r < n; r++) {
+  for (let r = 0; r < n2; r++) {
     grid[r][r].hasCow = true;
   }
-  return { n, mode, grid, cowsFound: 0, totalCows: n, isWon: false, guessHintsUsed: 0 };
+  return { n: n2, mode, grid, cowsFound: 0, totalCows: n2, isWon: false, guessHintsUsed: 0 };
 }
 
-// scripts/generate-puzzles.ts
-var outputDir = "public/puzzles";
-var modes = ["easy"];
-var sizes = (process.env.PUZZLE_SIZES ?? "4,5,6,7,8,9,10,11,12,13,14,15").split(",").map((value) => Number(value.trim())).filter((value) => Number.isInteger(value) && value >= 4 && value <= 15);
-var countPerSize = Number(process.env.PUZZLE_COUNT ?? 5);
-var maxAttemptsPerPuzzle = Number(process.env.PUZZLE_ATTEMPTS ?? 30);
-var skipUniqueCheck = process.env.PUZZLE_SKIP_UNIQUE === "1";
-function toPuzzle(game, id) {
-  const colorGrid = [];
-  const cows = [];
-  for (let r = 0; r < game.n; r++) {
-    const row = [];
-    for (let c = 0; c < game.n; c++) {
-      row.push(game.grid[r][c].colorIndex);
-      if (game.grid[r][c].hasCow) cows.push([r, c]);
-    }
-    colorGrid.push(row);
-  }
-  return {
-    id,
-    n: game.n,
-    mode: game.mode,
-    colorGrid,
-    cows
-  };
-}
-async function loadExistingManifest() {
+// scripts/stats-unique.ts
+var n = Number(process.env.STAT_N ?? 4);
+var trials = Number(process.env.STAT_TRIALS ?? 300);
+var hist = /* @__PURE__ */ new Map();
+var both = 0;
+for (let i = 0; i < trials; i++) {
+  let game;
   try {
-    const raw = await readFile(`${outputDir}/manifest.json`, "utf8");
-    const manifest = JSON.parse(raw);
-    return {
-      easy: manifest.easy ?? {},
-      hard: manifest.hard ?? {}
-    };
+    game = createGameState(n, "easy", {
+      hintCheck: false,
+      layout: "grow",
+      requireUnique: false
+    });
   } catch {
-    return { easy: {}, hard: {} };
+    continue;
   }
+  const c = countCowSolutions(game, 10);
+  hist.set(c, (hist.get(c) ?? 0) + 1);
+  if (c === 1 && isHintSolvable(game)) both++;
 }
-async function writeManifest(manifest) {
-  await writeFile(`${outputDir}/manifest.json`, `${JSON.stringify(manifest, null, 2)}
-`, "utf8");
-}
-function puzzleFileName(mode, n, index) {
-  return `${mode}-${n}-${String(index).padStart(3, "0")}.json`;
-}
-function puzzleId(mode, n, index) {
-  return `${mode}-${n}-${String(index).padStart(3, "0")}`;
-}
-function extractPuzzleIndex(fileName, mode, n) {
-  const match = fileName.match(new RegExp(`^${mode}-${n}-(\\d{3,})\\.json$`));
-  if (!match) return null;
-  return Number(match[1]);
-}
-async function fileExists(fileName) {
+var uniqueOnly = 0;
+for (let i = 0; i < trials; i++) {
   try {
-    await access(`${outputDir}/${fileName}`);
-    return true;
-  } catch {
-    return false;
-  }
-}
-async function findNextPuzzleIndex(manifest, mode, n) {
-  const usedIndexes = /* @__PURE__ */ new Set();
-  for (const fileName of manifest[mode][String(n)] ?? []) {
-    const index2 = extractPuzzleIndex(fileName, mode, n);
-    if (index2 !== null) usedIndexes.add(index2);
-  }
-  try {
-    const files = await readdir(outputDir);
-    for (const fileName of files) {
-      const index2 = extractPuzzleIndex(fileName, mode, n);
-      if (index2 !== null) usedIndexes.add(index2);
-    }
+    const game = createGameState(n, "easy", {
+      hintCheck: false,
+      layout: "grow",
+      requireUnique: true
+    });
+    if (hasUniqueCowPlacement(game)) uniqueOnly++;
   } catch {
   }
-  let index = 1;
-  while (usedIndexes.has(index) || await fileExists(puzzleFileName(mode, n, index))) {
-    index++;
-  }
-  return index;
 }
-async function generateOnePuzzle(mode, n, id) {
-  for (let attempt = 1; attempt <= maxAttemptsPerPuzzle; attempt++) {
-    let game;
-    try {
-      game = createGameState(n, mode, {
-        hintCheck: false,
-        layout: "grow",
-        requireUnique: !skipUniqueCheck
-      });
-    } catch {
-      console.log(`layout retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`);
-      continue;
-    }
-    if (!skipUniqueCheck && !hasUniqueCowPlacement(game)) {
-      console.log(`non-unique retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`);
-      continue;
-    }
-    if (!isHintSolvable(game)) {
-      console.log(`hint retry ${id} (${attempt}/${maxAttemptsPerPuzzle})`);
-      continue;
-    }
-    return toPuzzle(game, id);
-  }
-  return null;
-}
-async function main() {
-  await mkdir(outputDir, { recursive: true });
-  const manifest = await loadExistingManifest();
-  const startedAt = Date.now();
-  for (const mode of modes) {
-    for (const n of sizes) {
-      manifest[mode][String(n)] = manifest[mode][String(n)] ?? [];
-      for (let count = 0; count < countPerSize; count++) {
-        const index = await findNextPuzzleIndex(manifest, mode, n);
-        const id = puzzleId(mode, n, index);
-        const fileName = puzzleFileName(mode, n, index);
-        const puzzle = await generateOnePuzzle(mode, n, id);
-        if (!puzzle) {
-          throw new Error(`${id} failed after ${maxAttemptsPerPuzzle} attempts`);
-        }
-        if (await fileExists(fileName)) {
-          throw new Error(`${fileName} already exists; refusing to overwrite it`);
-        }
-        await writeFile(
-          `${outputDir}/${fileName}`,
-          `${JSON.stringify(puzzle, null, 2)}
-`,
-          "utf8"
-        );
-        if (!manifest[mode][String(n)].includes(fileName)) {
-          manifest[mode][String(n)].push(fileName);
-        }
-        console.log(`wrote ${fileName}`);
-      }
-      await writeManifest(manifest);
-    }
-  }
-  const elapsed = ((Date.now() - startedAt) / 1e3).toFixed(1);
-  console.log(`wrote ${outputDir}/manifest.json (${elapsed}s)`);
-}
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+console.log({
+  n,
+  trials,
+  growSolutionHist: Object.fromEntries([...hist.entries()].sort((a, b) => a[0] - b[0])),
+  uniqueAndHintPct: `${(both / trials * 100).toFixed(1)}%`,
+  uniqueLayoutHits: uniqueOnly
 });

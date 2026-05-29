@@ -15,6 +15,7 @@ const {
   totalCows,
   progress,
   showWin,
+  isStartingGame,
   isVip,
   startGame,
   ensureGameStarted,
@@ -37,12 +38,19 @@ const importError = ref(false)
 const currentHint = ref<HintInfo | null>(null)
 const hintCellsSet = ref<Set<string>>(new Set())
 
-function handleRestart() {
-  startGame()
+function clearHintUi() {
+  currentHint.value = null
+  hintCellsSet.value = new Set()
 }
 
-function handlePlayAgain() {
-  startGame()
+async function handleRestart() {
+  clearHintUi()
+  await startGame()
+}
+
+async function handlePlayAgain() {
+  clearHintUi()
+  await startGame()
 }
 
 function handleBackHome() {
@@ -295,8 +303,16 @@ onUnmounted(() => {
 
     <WinModal
       v-if="showWin"
+      :loading="isStartingGame"
       @play-again="handlePlayAgain"
     />
+
+    <div
+      v-if="isStartingGame"
+      class="loading-overlay"
+    >
+      正在加载新关卡…
+    </div>
   </div>
 </template>
 
@@ -624,6 +640,20 @@ onUnmounted(() => {
 
 .hint-btn:active {
   transform: scale(0.95);
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fef3c7;
+  font-size: 16px;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
 }
 
 </style>

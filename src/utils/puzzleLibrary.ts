@@ -68,6 +68,30 @@ function pickPuzzleName(names: string[]): string | null {
   return chosen
 }
 
+export async function getAvailableSizes(mode: GameMode): Promise<number[]> {
+  const manifest = await loadManifest()
+  const bucket = manifest?.[mode]
+  if (!bucket) return []
+
+  return Object.keys(bucket)
+    .map((value) => Number(value))
+    .filter((n) => Number.isInteger(n) && (bucket[String(n)]?.length ?? 0) > 0)
+    .sort((a, b) => a - b)
+}
+
+/** 从 manifest 里随机选一个已有题库的边长并加载 */
+export async function loadRandomPuzzleAny(mode: GameMode): Promise<StoredPuzzle | null> {
+  const sizes = await getAvailableSizes(mode)
+  if (sizes.length === 0) return null
+
+  const shuffled = [...sizes].sort(() => Math.random() - 0.5)
+  for (const n of shuffled) {
+    const puzzle = await loadRandomPuzzle(n, mode)
+    if (puzzle) return puzzle
+  }
+  return null
+}
+
 export async function loadRandomPuzzle(n: number, mode: GameMode): Promise<StoredPuzzle | null> {
   const manifest = await loadManifest()
   const names = manifest?.[mode]?.[String(n)]

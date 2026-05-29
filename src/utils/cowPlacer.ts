@@ -1,4 +1,4 @@
-import { isHintSolvable } from './hintRules'
+import { countCowSolutions, isHintSolvable } from './hintRules'
 
 export type GameMode = 'easy' | 'hard'
 
@@ -280,56 +280,104 @@ function createSnakeColorOf(n: number): number[][] {
   return colorOf
 }
 
-export function createGameState(n: number, mode: GameMode = 'hard'): GameState {
+export type ColorLayoutStrategy = 'snake' | 'grow' | 'any'
+
+export interface CreateGameStateOptions {
+  /** 默认 true；false 时只生成合法棋盘，不做提示链校验（供题库脚本筛选） */
+  hintCheck?: boolean
+  /** 着色策略；蛇形 (n≥4) 往往有多解，题库生成请用 grow */
+  layout?: ColorLayoutStrategy
+  /** 要求整盘仅有一种合法放牛方案（题库生成建议开启） */
+  requireUnique?: boolean
+}
+
+function buildGameState(
+  n: number,
+  mode: GameMode,
+  colorOf: number[][],
+  cowCols: number[],
+): GameState {
+  const grid: CellState[][] = Array.from({ length: n }, (_, r) =>
+    Array.from({ length: n }, (_, c) => ({
+      colorIndex: colorOf[r][c],
+      hasCow: cowCols[r] === c,
+      isRevealed: false,
+      isFlagged: false,
+      isWrong: false,
+    }))
+  )
+
+  return {
+    n,
+    mode,
+    grid,
+    cowsFound: 0,
+    totalCows: n,
+    isWon: false,
+    guessHintsUsed: 0,
+  }
+}
+
+function passesUnique(game: GameState, requireUnique: boolean): boolean {
+  return !requireUnique || countCowSolutions(game, 2) === 1
+}
+
+function acceptGame(game: GameState, hintCheck: boolean, requireUnique: boolean): boolean {
+  if (!passesUnique(game, requireUnique)) return false
+  return !hintCheck || isHintSolvable(game)
+}
+
+export function createGameState(
+  n: number,
+  mode: GameMode = 'hard',
+  options?: CreateGameStateOptions,
+): GameState {
+  const hintCheck = options?.hintCheck !== false
+  const requireUnique = options?.requireUnique === true
+  const layout = options?.layout ?? 'any'
   const dirs = mode === 'easy' ? DIRS_4 : DIRS_8
+  const maxSnake = hintCheck ? 100 : requireUnique ? 40 : 200
+  const maxGrow = hintCheck ? 80 : requireUnique ? 600 : 120
 
-  for (let retry = 0; retry < 80; retry++) {
-    const colorOf = growRegions(n, dirs)
-    if (!colorOf) continue
-
-    const cowCols = placeCowsInRegions(n, colorOf)
-    if (!cowCols) continue
-
-    const grid: CellState[][] = Array.from({ length: n }, (_, r) =>
-      Array.from({ length: n }, (_, c) => ({
-        colorIndex: colorOf[r][c],
-        hasCow: cowCols[r] === c,
-        isRevealed: false,
-        isFlagged: false,
-        isWrong: false,
-      }))
-    )
-
-    const game: GameState = {
-      n,
-      mode,
-      grid,
-      cowsFound: 0,
-      totalCows: n,
-      isWon: false,
-      guessHintsUsed: 0,
+  const trySnake = (): GameState | null => {
+    for (let retry = 0; retry < maxSnake; retry++) {
+      const colorOf = createSnakeColorOf(n)
+      const cowCols = placeCowsInRegions(n, colorOf)
+      if (!cowCols) continue
+      const game = buildGameState(n, mode, colorOf, cowCols)
+      if (acceptGame(game, hintCheck, requireUnique)) return game
     }
-
-    if (isHintSolvable(game)) return game
+    return null
   }
 
-  for (let retry = 0; retry < 100; retry++) {
-    const colorOf = createSnakeColorOf(n)
-    const cowCols = placeCowsInRegions(n, colorOf)
-    if (!cowCols) continue
+  const tryGrow = (): GameState | null => {
+    for (let retry = 0; retry < maxGrow; retry++) {
+      const colorOf = growRegions(n, dirs)
+      if (!colorOf) continue
+      const cowCols = placeCowsInRegions(n, colorOf)
+      if (!cowCols) continue
+      const game = buildGameState(n, mode, colorOf, cowCols)
+      if (acceptGame(game, hintCheck, requireUnique)) return game
+    }
+    return null
+  }
 
-    const grid: CellState[][] = Array.from({ length: n }, (_, r) =>
-      Array.from({ length: n }, (_, c) => ({
-        colorIndex: colorOf[r][c],
-        hasCow: cowCols[r] === c,
-        isRevealed: false,
-        isFlagged: false,
-        isWrong: false,
-      }))
-    )
+  const builders: (() => GameState | null)[] =
+    layout === 'grow'
+      ? [tryGrow, trySnake]
+      : layout === 'snake'
+        ? [trySnake, tryGrow]
+        : requireUnique || hintCheck
+          ? [tryGrow, trySnake]
+          : [trySnake, tryGrow]
 
-    const game: GameState = { n, mode, grid, cowsFound: 0, totalCows: n, isWon: false, guessHintsUsed: 0 }
-    if (isHintSolvable(game)) return game
+  for (const build of builders) {
+    const game = build()
+    if (game) return game
+  }
+
+  if (!hintCheck) {
+    throw new Error(`无法在限定次数内生成 n=${n} 的棋盘布局`)
   }
 
   const colorOf = createSnakeColorOf(n)

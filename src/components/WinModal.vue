@@ -1,4 +1,8 @@
 <script setup lang="ts">
+defineProps<{
+  loading?: boolean
+}>()
+
 defineEmits<{
   playAgain: []
 }>()
@@ -24,9 +28,10 @@ defineEmits<{
       </div>
       <button
         class="play-again-btn"
+        :disabled="loading"
         @click="$emit('playAgain')"
       >
-        🔄 再来一局
+        {{ loading ? '加载中…' : '🔄 再来一局' }}
       </button>
     </div>
   </div>
@@ -101,6 +106,12 @@ defineEmits<{
 
 .play-again-btn:active {
   transform: scale(0.97);
+}
+
+.play-again-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
 }
 
 @keyframes fade-in {

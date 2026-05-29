@@ -679,7 +679,17 @@ function checkNLinesOnlyNColors(board: BoardView, direction: 'row' | 'col'): Hin
   return null
 }
 
-function ruleSolutionSet(board: BoardView): HintInfo | null {
+interface EnumerateCowSolutionsOptions {
+  maxSolutions: number
+  maxNodes: number
+  /** 为 true 时跳过「活跃格过多」限制，用于开局整盘唯一解判定 */
+  allowFullBoard?: boolean
+}
+
+function enumerateCowSolutions(
+  board: BoardView,
+  options: EnumerateCowSolutionsOptions,
+): { solutions: Set<string>[]; truncated: boolean; activeCells: [number, number][] } {
   const candidatesByRow: [number, number][][] = []
   const activeCells: [number, number][] = []
 
@@ -697,7 +707,9 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
     candidatesByRow.push(row)
   }
 
-  if (activeCells.length > board.n * 4) return null
+  if (!options.allowFullBoard && activeCells.length > board.n * 4) {
+    return { solutions: [], truncated: false, activeCells }
+  }
 
   const solutions: Set<string>[] = []
   const usedCols = new Set<number>()
@@ -706,8 +718,6 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
   const solvedRows = new Set<number>()
   let nodeCount = 0
   let truncated = false
-  const maxSolutions = 200
-  const maxNodes = 20000
 
   function canPlace(r: number, c: number): boolean {
     const cell = board.grid[r][c]
@@ -738,7 +748,7 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
   function search() {
     if (truncated) return
     nodeCount++
-    if (nodeCount > maxNodes || solutions.length >= maxSolutions) {
+    if (nodeCount > options.maxNodes || solutions.length >= options.maxSolutions) {
       truncated = true
       return
     }
@@ -767,6 +777,32 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
   }
 
   search()
+  return { solutions, truncated, activeCells }
+}
+
+/** 统计满足规则的放牛方案数（达到 limit 即停，用于题库生成） */
+export function countCowSolutions(board: BoardView, limit = 2): number {
+  const maxNodes = Math.min(120_000, 8_000 + board.n * board.n * 600)
+  const { solutions, truncated } = enumerateCowSolutions(board, {
+    maxSolutions: limit,
+    maxNodes,
+    allowFullBoard: true,
+  })
+  if (truncated) return limit + 1
+  return solutions.length
+}
+
+export function hasUniqueCowPlacement(board: BoardView): boolean {
+  return countCowSolutions(board, 2) === 1
+}
+
+function ruleSolutionSet(board: BoardView): HintInfo | null {
+  const { solutions, truncated, activeCells } = enumerateCowSolutions(board, {
+    maxSolutions: 200,
+    maxNodes: 20_000,
+    allowFullBoard: false,
+  })
+
   if (truncated || solutions.length === 0) return null
 
   for (const [r, c] of activeCells) {
