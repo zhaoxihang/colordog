@@ -154,4 +154,32 @@ const emit = defineEmits<{
 .restart-btn:active {
   transform: scale(0.95);
 }
+
+@media (max-width: 600px) {
+  .status-bar {
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .status-center {
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .count {
+    font-size: 16px;
+  }
+
+  .vip-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .restart-btn {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
 </style>

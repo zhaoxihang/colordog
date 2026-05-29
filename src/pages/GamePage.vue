@@ -182,22 +182,27 @@ onUnmounted(() => {
         @toggle-vip="handleToggleVip"
       />
 
-      <div class="grid-area">
-        <GameGrid
-          :grid="grid"
-          :n="n"
-          :hint-cells="hintCellsSet"
-          :hint-active="!!currentHint"
-          @cell-drag-start="startDrag"
-          @cell-drag-over="dragOver"
-        />
+      <div class="play-area">
+        <div class="grid-area">
+          <GameGrid
+            :grid="grid"
+            :n="n"
+            :hint-cells="hintCellsSet"
+            :hint-active="!!currentHint"
+            @cell-drag-start="startDrag"
+            @cell-drag-over="dragOver"
+          />
+        </div>
         <div
           v-if="currentHint"
           class="hint-bar"
         >
           <div class="hint-info">
             <span class="hint-rule" :class="currentHint.type">{{ currentHint.ruleName }}</span>
-            <span class="hint-desc" v-html="colorizeDescription(currentHint.description)" />
+            <p
+              class="hint-desc"
+              v-html="colorizeDescription(currentHint.description)"
+            />
           </div>
           <div class="hint-actions">
             <button
@@ -210,6 +215,7 @@ onUnmounted(() => {
             </button>
             <button
               class="hint-close-btn"
+              aria-label="关闭提示"
               @click="handleCloseHint"
             >
               ✕
@@ -376,35 +382,48 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.grid-area {
+.play-area {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+  padding: 0 12px 4px;
+  box-sizing: border-box;
+}
+
+.grid-area {
+  flex: 0 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  width: 100%;
 }
 
 .hint-bar {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: min(100%, 720px);
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
   background: linear-gradient(135deg, rgba(26, 46, 35, 0.95), rgba(30, 58, 42, 0.95));
   border: 1px solid rgba(251, 191, 36, 0.35);
-  border-radius: 14px;
-  padding: 10px 16px;
+  border-radius: 12px;
+  padding: 10px 12px;
   backdrop-filter: blur(12px);
-  max-width: 90%;
+  box-sizing: border-box;
 }
 
 .hint-info {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .hint-rule {
@@ -412,6 +431,7 @@ onUnmounted(() => {
   font-weight: 800;
   color: #fbbf24;
   text-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+  line-height: 1.3;
 }
 
 .hint-rule.cow {
@@ -420,15 +440,24 @@ onUnmounted(() => {
 }
 
 .hint-desc {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.4;
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  writing-mode: horizontal-tb;
+}
+
+.hint-desc :deep(span) {
+  display: inline;
 }
 
 .hint-actions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .hint-apply-btn {
@@ -654,6 +683,64 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: 700;
   backdrop-filter: blur(4px);
+}
+
+@media (max-width: 600px) {
+  .top-bar {
+    padding: 8px 12px;
+  }
+
+  .game-title {
+    font-size: 16px;
+  }
+
+  .play-area {
+    padding: 0 8px 4px;
+  }
+
+  .hint-bar {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 8px;
+    padding: 8px 10px;
+  }
+
+  .hint-rule {
+    font-size: 13px;
+  }
+
+  .hint-desc {
+    font-size: 12px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .hint-actions {
+    justify-content: flex-end;
+  }
+
+  .hint-apply-btn,
+  .hint-close-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+
+  .tips {
+    display: none;
+  }
+
+  .action-bar {
+    padding: 6px 12px;
+    gap: 10px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
 }
 
 </style>
