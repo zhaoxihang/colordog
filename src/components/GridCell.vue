@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import CowSprite from '@/components/CowSprite.vue'
 import { COLORS } from '@/utils/cowPlacer'
 import type { CellState } from '@/utils/cowPlacer'
 
@@ -28,9 +29,10 @@ const crossSize = computed(() => {
 
 const cowSize = computed(() => {
   const s = props.cellSize
-  if (s <= 32) return 14
-  if (s <= 44) return 20
-  return 26
+  // 雪碧图在格子里略放大，比 emoji 更易辨认
+  if (s <= 32) return 18
+  if (s <= 44) return 26
+  return 34
 })
 
 function onMouseDown(e: MouseEvent) {
@@ -105,11 +107,11 @@ function onTouchMove(e: TouchEvent) {
     </transition>
 
     <transition name="cow-pop">
-      <span
+      <CowSprite
         v-if="cell.isRevealed && cell.hasCow"
         class="cow"
-        :style="{ fontSize: cowSize + 'px' }"
-      >🐄</span>
+        :size="cowSize"
+      />
     </transition>
 
     <transition name="wrong-pop">
@@ -226,7 +228,7 @@ function onTouchMove(e: TouchEvent) {
 }
 
 .cow {
-  line-height: 1;
+  line-height: 0;
 }
 
 .pop-enter-active {
