@@ -1,0 +1,1125 @@
+{
+  "generatedAt": "2026-06-02T06:29:15.853Z",
+  "ruleWeights": {
+    "已揭开的牛": 1,
+    "唯一颜色": 2,
+    "唯一活跃行": 3,
+    "唯一活跃列": 3,
+    "只有2格相连同": 4,
+    "只有3格相连同": 5,
+    "三格夹角": 6,
+    "夹角": 6,
+    "T字形": 6,
+    "多格加一": 7,
+    "双色单邻": 7,
+    "整行": 7,
+    "整列": 7,
+    "假设反证": 20
+  },
+  "results": {
+    "easy-4-001.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 9,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "三格夹角": 1,
+        "只有2格相连同列": 2,
+        "假设反证": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 47
+    },
+    "easy-4-002.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 4,
+        "只有2格相连同行": 1
+      },
+      "totalScore": 12
+    },
+    "easy-4-003.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "三格夹角": 2,
+        "假设反证": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 40
+    },
+    "easy-4-004.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 4,
+      "ruleUsage": {
+        "唯一颜色": 4
+      },
+      "totalScore": 8
+    },
+    "easy-4-005.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "只有2格相连同行": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 12
+    },
+    "easy-4-012.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "三格夹角": 3,
+        "假设反证": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 46
+    },
+    "easy-4-013.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "只有2格相连同行": 1,
+        "只有3格相连同列": 2,
+        "2色2列": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 32
+    },
+    "easy-4-014.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "只有2格相连同列": 1,
+        "只有2格相连同行": 1,
+        "2色2列": 1,
+        "只有3格相连同列": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 31
+    },
+    "easy-4-015.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 4,
+      "ruleUsage": {
+        "唯一颜色": 4
+      },
+      "totalScore": 8
+    },
+    "easy-4-016.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "只有2格相连同行": 2,
+        "假设反证": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 41
+    },
+    "easy-4-017.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 4,
+        "只有2格相连同列": 1
+      },
+      "totalScore": 12
+    },
+    "easy-4-018.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 4,
+        "只有2格相连同列": 1
+      },
+      "totalScore": 12
+    },
+    "easy-4-019.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "三格夹角": 3,
+        "假设反证": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 46
+    },
+    "easy-4-020.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "唯一颜色": 4,
+        "2格同列": 2
+      },
+      "totalScore": 28
+    },
+    "easy-4-021.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 13
+    },
+    "easy-4-022.json": {
+      "n": 4,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "三格夹角": 3,
+        "假设反证": 1,
+        "唯一颜色": 4
+      },
+      "totalScore": 46
+    },
+    "easy-5-004.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "唯一颜色": 5,
+        "只有2格相连同列": 1
+      },
+      "totalScore": 14
+    },
+    "easy-5-012.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "只有2格相连同列": 1,
+        "唯一颜色": 5
+      },
+      "totalScore": 14
+    },
+    "easy-5-013.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 5
+      },
+      "totalScore": 10
+    },
+    "easy-5-014.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 5
+      },
+      "totalScore": 10
+    },
+    "easy-5-015.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "唯一颜色": 5,
+        "只有2格相连同行": 1
+      },
+      "totalScore": 14
+    },
+    "easy-5-016.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "4格相连同列": 1,
+        "只有2格相连同行": 1,
+        "唯一颜色": 5
+      },
+      "totalScore": 24
+    },
+    "easy-5-017.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 9,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "只有2格相连同列": 1,
+        "2色2行": 1,
+        "2色2列": 1,
+        "唯一颜色": 5
+      },
+      "totalScore": 39
+    },
+    "easy-5-018.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "只有2格相连同列": 1,
+        "只有2格相连同行": 1,
+        "唯一颜色": 5
+      },
+      "totalScore": 18
+    },
+    "easy-5-019.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 5
+      },
+      "totalScore": 10
+    },
+    "easy-5-020.json": {
+      "n": 5,
+      "solved": true,
+      "steps": 5,
+      "ruleUsage": {
+        "唯一颜色": 5
+      },
+      "totalScore": 10
+    },
+    "easy-6-001.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同列": 1
+      },
+      "totalScore": 16
+    },
+    "easy-6-005.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "唯一颜色": 6
+      },
+      "totalScore": 12
+    },
+    "easy-6-015.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同行": 1
+      },
+      "totalScore": 16
+    },
+    "easy-6-016.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "唯一颜色": 6
+      },
+      "totalScore": 12
+    },
+    "easy-6-017.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同行": 2
+      },
+      "totalScore": 20
+    },
+    "easy-6-018.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 12,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同列": 2,
+        "只有3格相连同列": 1,
+        "2格同行": 1,
+        "2色2行": 1,
+        "假设反证": 1
+      },
+      "totalScore": 65
+    },
+    "easy-6-019.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同列": 1
+      },
+      "totalScore": 16
+    },
+    "easy-6-020.json": {
+      "n": 6,
+      "solved": true,
+      "steps": 6,
+      "ruleUsage": {
+        "唯一颜色": 6
+      },
+      "totalScore": 12
+    },
+    "easy-7-013.json": {
+      "n": 7,
+      "solved": true,
+      "steps": 10,
+      "ruleUsage": {
+        "只有2格相连同列": 3,
+        "唯一颜色": 7
+      },
+      "totalScore": 26
+    },
+    "easy-7-016.json": {
+      "n": 7,
+      "solved": true,
+      "steps": 13,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同行": 3,
+        "2色2行": 1,
+        "唯一活跃列": 1,
+        "2色2列": 1,
+        "假设反证": 1
+      },
+      "totalScore": 67
+    },
+    "easy-7-017.json": {
+      "n": 7,
+      "solved": true,
+      "steps": 9,
+      "ruleUsage": {
+        "唯一颜色": 7,
+        "只有2格相连同行": 1,
+        "2色2列": 1
+      },
+      "totalScore": 28
+    },
+    "easy-7-018.json": {
+      "n": 7,
+      "solved": true,
+      "steps": 7,
+      "ruleUsage": {
+        "唯一颜色": 7
+      },
+      "totalScore": 14
+    },
+    "easy-7-019.json": {
+      "n": 7,
+      "solved": true,
+      "steps": 11,
+      "ruleUsage": {
+        "唯一颜色": 7,
+        "只有2格相连同列": 1,
+        "三格夹角": 1,
+        "2色2行": 1,
+        "只有3格相连同列": 1
+      },
+      "totalScore": 39
+    },
+    "easy-7-020.json": {
+      "n": 7,
+      "solved": true,
+      "steps": 8,
+      "ruleUsage": {
+        "唯一颜色": 7,
+        "2格同列": 1
+      },
+      "totalScore": 24
+    },
+    "easy-8-005.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 10,
+      "ruleUsage": {
+        "只有2格相连同行": 1,
+        "只有3格相连同列": 1,
+        "唯一颜色": 8
+      },
+      "totalScore": 25
+    },
+    "easy-8-014.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 14,
+      "ruleUsage": {
+        "三格夹角": 3,
+        "2色2行": 2,
+        "唯一颜色": 8,
+        "3色3列": 1
+      },
+      "totalScore": 64
+    },
+    "easy-8-016.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 13,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "只有2格相连同行": 1,
+        "唯一颜色": 8,
+        "三格夹角": 1,
+        "2色2列": 2
+      },
+      "totalScore": 51
+    },
+    "easy-8-017.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 14,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "只有3格相连同列": 1,
+        "三格夹角": 2,
+        "3色3行": 1,
+        "唯一颜色": 8
+      },
+      "totalScore": 51
+    },
+    "easy-8-018.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 17,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "三格夹角": 3,
+        "2色2列": 1,
+        "唯一颜色": 7,
+        "只有2格相连同列": 2,
+        "2格同列": 1,
+        "只有2格相连同行": 1,
+        "唯一活跃行": 1
+      },
+      "totalScore": 72
+    },
+    "easy-8-019.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 17,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "只有2格相连同行": 1,
+        "只有2格相连同列": 2,
+        "三格夹角": 1,
+        "夹角": 1,
+        "2色2行": 2,
+        "唯一颜色": 8,
+        "3色3列": 1
+      },
+      "totalScore": 75
+    },
+    "easy-8-020.json": {
+      "n": 8,
+      "solved": true,
+      "steps": 10,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "只有2格相连同列": 1,
+        "唯一颜色": 8
+      },
+      "totalScore": 25
+    },
+    "easy-9-002.json": {
+      "n": 9,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "只有3格相连同列": 1,
+        "4格同列": 1,
+        "三格夹角": 2,
+        "6色6行": 1,
+        "2色2列": 1,
+        "唯一活跃行": 1,
+        "唯一颜色": 8,
+        "只有2格相连同行": 2
+      },
+      "totalScore": 82
+    },
+    "easy-9-016.json": {
+      "n": 9,
+      "solved": true,
+      "steps": 16,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "三格夹角": 2,
+        "夹角": 1,
+        "2色2行": 2,
+        "唯一颜色": 9
+      },
+      "totalScore": 64
+    },
+    "easy-9-017.json": {
+      "n": 9,
+      "solved": true,
+      "steps": 11,
+      "ruleUsage": {
+        "只有2格相连同列": 1,
+        "唯一颜色": 9,
+        "只有2格相连同行": 1
+      },
+      "totalScore": 26
+    },
+    "easy-9-018.json": {
+      "n": 9,
+      "solved": true,
+      "steps": 11,
+      "ruleUsage": {
+        "只有2格相连同列": 1,
+        "唯一颜色": 9,
+        "只有3格相连同列": 1
+      },
+      "totalScore": 27
+    },
+    "easy-9-019.json": {
+      "n": 9,
+      "solved": true,
+      "steps": 12,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "唯一颜色": 9,
+        "只有2格相连同行": 1
+      },
+      "totalScore": 30
+    },
+    "easy-9-020.json": {
+      "n": 9,
+      "solved": true,
+      "steps": 13,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "唯一颜色": 9,
+        "2色2列": 1,
+        "2格同行": 1
+      },
+      "totalScore": 46
+    },
+    "easy-10-016.json": {
+      "n": 10,
+      "solved": true,
+      "steps": 16,
+      "ruleUsage": {
+        "只有2格相连同行": 2,
+        "只有2格相连同列": 2,
+        "唯一颜色": 9,
+        "三格夹角": 1,
+        "2色2列": 1,
+        "唯一活跃行": 1
+      },
+      "totalScore": 53
+    },
+    "easy-10-017.json": {
+      "n": 10,
+      "solved": true,
+      "steps": 20,
+      "ruleUsage": {
+        "只有2格相连同列": 3,
+        "唯一颜色": 10,
+        "三格夹角": 1,
+        "3色3行": 1,
+        "4色4列": 1,
+        "2色2列": 1,
+        "假设反证": 1,
+        "2格同列": 1,
+        "只有3格相连同列": 1
+      },
+      "totalScore": 103
+    },
+    "easy-10-018.json": {
+      "n": 10,
+      "solved": true,
+      "steps": 16,
+      "ruleUsage": {
+        "只有2格相连同列": 3,
+        "4格同行": 1,
+        "三格夹角": 1,
+        "2色2行": 1,
+        "唯一颜色": 10
+      },
+      "totalScore": 58
+    },
+    "easy-10-019.json": {
+      "n": 10,
+      "solved": true,
+      "steps": 15,
+      "ruleUsage": {
+        "只有2格相连同列": 3,
+        "只有3格相连同行": 1,
+        "只有2格相连同行": 1,
+        "唯一颜色": 10
+      },
+      "totalScore": 41
+    },
+    "easy-10-020.json": {
+      "n": 10,
+      "solved": true,
+      "steps": 18,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "3格同行": 2,
+        "只有2格相连同列": 2,
+        "唯一颜色": 10,
+        "只有2格相连同行": 3
+      },
+      "totalScore": 65
+    },
+    "easy-11-013.json": {
+      "n": 11,
+      "solved": true,
+      "steps": 15,
+      "ruleUsage": {
+        "只有2格相连同列": 1,
+        "唯一颜色": 11,
+        "只有2格相连同行": 1,
+        "2格同列": 1,
+        "2格同行": 1
+      },
+      "totalScore": 50
+    },
+    "easy-11-014.json": {
+      "n": 11,
+      "solved": true,
+      "steps": 22,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "2格同行": 1,
+        "三格夹角": 1,
+        "2色2列": 2,
+        "唯一颜色": 11,
+        "只有2格相连同列": 2,
+        "5色5行": 1,
+        "2色2行": 1,
+        "2格同列": 1
+      },
+      "totalScore": 106
+    },
+    "easy-11-015.json": {
+      "n": 11,
+      "solved": true,
+      "steps": 20,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "只有2格相连同行": 2,
+        "唯一颜色": 8,
+        "三格夹角": 3,
+        "2色2行": 2,
+        "唯一活跃列": 3
+      },
+      "totalScore": 81
+    },
+    "easy-11-016.json": {
+      "n": 11,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有2格相连同列": 4,
+        "三格夹角": 2,
+        "4色4列": 1,
+        "只有3格相连同列": 1,
+        "唯一颜色": 11
+      },
+      "totalScore": 65
+    },
+    "easy-11-017.json": {
+      "n": 11,
+      "solved": true,
+      "steps": 15,
+      "ruleUsage": {
+        "只有2格相连同行": 1,
+        "唯一颜色": 11,
+        "只有2格相连同列": 2,
+        "3色3行": 1
+      },
+      "totalScore": 44
+    },
+    "easy-12-011.json": {
+      "n": 12,
+      "solved": true,
+      "steps": 18,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "只有2格相连同行": 1,
+        "唯一颜色": 12,
+        "2格同列": 1,
+        "4格同行": 1,
+        "3色3行": 1
+      },
+      "totalScore": 66
+    },
+    "easy-12-012.json": {
+      "n": 12,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "只有2格相连同列": 2,
+        "唯一颜色": 12,
+        "三格夹角": 1,
+        "3色3行": 1,
+        "2色2列": 1
+      },
+      "totalScore": 68
+    },
+    "easy-12-013.json": {
+      "n": 12,
+      "solved": true,
+      "steps": 21,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "三格夹角": 3,
+        "夹角": 1,
+        "假设反证": 1,
+        "唯一颜色": 11,
+        "只有2格相连同列": 1,
+        "3色3列": 1,
+        "唯一活跃行": 1
+      },
+      "totalScore": 93
+    },
+    "easy-12-014.json": {
+      "n": 12,
+      "solved": true,
+      "steps": 18,
+      "ruleUsage": {
+        "只有2格相连同列": 4,
+        "3色3行": 1,
+        "唯一颜色": 12,
+        "2格同行": 1
+      },
+      "totalScore": 60
+    },
+    "easy-12-015.json": {
+      "n": 12,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "只有3格相连同行": 1,
+        "只有2格相连同列": 2,
+        "唯一颜色": 12,
+        "只有2格相连同行": 2,
+        "3色3行": 1
+      },
+      "totalScore": 60
+    }
+  },
+  "top": [
+    {
+      "file": "easy-11-014.json",
+      "n": 11,
+      "solved": true,
+      "steps": 22,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "2格同行": 1,
+        "三格夹角": 1,
+        "2色2列": 2,
+        "唯一颜色": 11,
+        "只有2格相连同列": 2,
+        "5色5行": 1,
+        "2色2行": 1,
+        "2格同列": 1
+      },
+      "totalScore": 106
+    },
+    {
+      "file": "easy-10-017.json",
+      "n": 10,
+      "solved": true,
+      "steps": 20,
+      "ruleUsage": {
+        "只有2格相连同列": 3,
+        "唯一颜色": 10,
+        "三格夹角": 1,
+        "3色3行": 1,
+        "4色4列": 1,
+        "2色2列": 1,
+        "假设反证": 1,
+        "2格同列": 1,
+        "只有3格相连同列": 1
+      },
+      "totalScore": 103
+    },
+    {
+      "file": "easy-12-013.json",
+      "n": 12,
+      "solved": true,
+      "steps": 21,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "三格夹角": 3,
+        "夹角": 1,
+        "假设反证": 1,
+        "唯一颜色": 11,
+        "只有2格相连同列": 1,
+        "3色3列": 1,
+        "唯一活跃行": 1
+      },
+      "totalScore": 93
+    },
+    {
+      "file": "easy-9-002.json",
+      "n": 9,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "只有3格相连同列": 1,
+        "4格同列": 1,
+        "三格夹角": 2,
+        "6色6行": 1,
+        "2色2列": 1,
+        "唯一活跃行": 1,
+        "唯一颜色": 8,
+        "只有2格相连同行": 2
+      },
+      "totalScore": 82
+    },
+    {
+      "file": "easy-11-015.json",
+      "n": 11,
+      "solved": true,
+      "steps": 20,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "只有2格相连同行": 2,
+        "唯一颜色": 8,
+        "三格夹角": 3,
+        "2色2行": 2,
+        "唯一活跃列": 3
+      },
+      "totalScore": 81
+    },
+    {
+      "file": "easy-8-019.json",
+      "n": 8,
+      "solved": true,
+      "steps": 17,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "只有2格相连同行": 1,
+        "只有2格相连同列": 2,
+        "三格夹角": 1,
+        "夹角": 1,
+        "2色2行": 2,
+        "唯一颜色": 8,
+        "3色3列": 1
+      },
+      "totalScore": 75
+    },
+    {
+      "file": "easy-8-018.json",
+      "n": 8,
+      "solved": true,
+      "steps": 17,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "三格夹角": 3,
+        "2色2列": 1,
+        "唯一颜色": 7,
+        "只有2格相连同列": 2,
+        "2格同列": 1,
+        "只有2格相连同行": 1,
+        "唯一活跃行": 1
+      },
+      "totalScore": 72
+    },
+    {
+      "file": "easy-12-012.json",
+      "n": 12,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有3格相连同列": 2,
+        "只有2格相连同列": 2,
+        "唯一颜色": 12,
+        "三格夹角": 1,
+        "3色3行": 1,
+        "2色2列": 1
+      },
+      "totalScore": 68
+    },
+    {
+      "file": "easy-7-016.json",
+      "n": 7,
+      "solved": true,
+      "steps": 13,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同行": 3,
+        "2色2行": 1,
+        "唯一活跃列": 1,
+        "2色2列": 1,
+        "假设反证": 1
+      },
+      "totalScore": 67
+    },
+    {
+      "file": "easy-12-011.json",
+      "n": 12,
+      "solved": true,
+      "steps": 18,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "只有2格相连同行": 1,
+        "唯一颜色": 12,
+        "2格同列": 1,
+        "4格同行": 1,
+        "3色3行": 1
+      },
+      "totalScore": 66
+    },
+    {
+      "file": "easy-6-018.json",
+      "n": 6,
+      "solved": true,
+      "steps": 12,
+      "ruleUsage": {
+        "唯一颜色": 6,
+        "只有2格相连同列": 2,
+        "只有3格相连同列": 1,
+        "2格同行": 1,
+        "2色2行": 1,
+        "假设反证": 1
+      },
+      "totalScore": 65
+    },
+    {
+      "file": "easy-10-020.json",
+      "n": 10,
+      "solved": true,
+      "steps": 18,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "3格同行": 2,
+        "只有2格相连同列": 2,
+        "唯一颜色": 10,
+        "只有2格相连同行": 3
+      },
+      "totalScore": 65
+    },
+    {
+      "file": "easy-11-016.json",
+      "n": 11,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有2格相连同列": 4,
+        "三格夹角": 2,
+        "4色4列": 1,
+        "只有3格相连同列": 1,
+        "唯一颜色": 11
+      },
+      "totalScore": 65
+    },
+    {
+      "file": "easy-8-014.json",
+      "n": 8,
+      "solved": true,
+      "steps": 14,
+      "ruleUsage": {
+        "三格夹角": 3,
+        "2色2行": 2,
+        "唯一颜色": 8,
+        "3色3列": 1
+      },
+      "totalScore": 64
+    },
+    {
+      "file": "easy-9-016.json",
+      "n": 9,
+      "solved": true,
+      "steps": 16,
+      "ruleUsage": {
+        "只有2格相连同列": 2,
+        "三格夹角": 2,
+        "夹角": 1,
+        "2色2行": 2,
+        "唯一颜色": 9
+      },
+      "totalScore": 64
+    },
+    {
+      "file": "easy-12-014.json",
+      "n": 12,
+      "solved": true,
+      "steps": 18,
+      "ruleUsage": {
+        "只有2格相连同列": 4,
+        "3色3行": 1,
+        "唯一颜色": 12,
+        "2格同行": 1
+      },
+      "totalScore": 60
+    },
+    {
+      "file": "easy-12-015.json",
+      "n": 12,
+      "solved": true,
+      "steps": 19,
+      "ruleUsage": {
+        "只有3格相连同列": 1,
+        "只有3格相连同行": 1,
+        "只有2格相连同列": 2,
+        "唯一颜色": 12,
+        "只有2格相连同行": 2,
+        "3色3行": 1
+      },
+      "totalScore": 60
+    },
+    {
+      "file": "easy-10-018.json",
+      "n": 10,
+      "solved": true,
+      "steps": 16,
+      "ruleUsage": {
+        "只有2格相连同列": 3,
+        "4格同行": 1,
+        "三格夹角": 1,
+        "2色2行": 1,
+        "唯一颜色": 10
+      },
+      "totalScore": 58
+    },
+    {
+      "file": "easy-10-016.json",
+      "n": 10,
+      "solved": true,
+      "steps": 16,
+      "ruleUsage": {
+        "只有2格相连同行": 2,
+        "只有2格相连同列": 2,
+        "唯一颜色": 9,
+        "三格夹角": 1,
+        "2色2列": 1,
+        "唯一活跃行": 1
+      },
+      "totalScore": 53
+    },
+    {
+      "file": "easy-8-016.json",
+      "n": 8,
+      "solved": true,
+      "steps": 13,
+      "ruleUsage": {
+        "只有3格相连同行": 1,
+        "只有2格相连同行": 1,
+        "唯一颜色": 8,
+        "三格夹角": 1,
+        "2色2列": 2
+      },
+      "totalScore": 51
+    }
+  ]
+}

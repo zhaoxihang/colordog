@@ -160,7 +160,9 @@ export function useGame() {
 
     if (cell.hasCow) {
       state.value.cowsFound++
-      autoFlagAroundCow(row, col)
+      if (isVip.value) {
+        autoFlagAroundCow(row, col)
+      }
       if (state.value.cowsFound >= state.value.totalCows) {
         state.value.isWon = true
         clearWinTimer()

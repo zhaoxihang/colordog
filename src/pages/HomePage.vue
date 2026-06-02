@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import CowSprite from '@/components/CowSprite.vue'
+import SkinPickerModal from '@/components/SkinPickerModal.vue'
 import { useGame } from '@/composables/useGame'
+import { useSkin } from '@/composables/useSkin'
 
 const router = useRouter()
 const { startGame } = useGame()
+const { selectedSkin, previewSkin, pickerOpen, openPicker } = useSkin()
+
+const heroSkin = computed(() => (pickerOpen.value ? previewSkin.value : selectedSkin.value))
 
 function handleStart() {
   startGame()
@@ -23,7 +30,11 @@ function handleStart() {
     <div class="content">
       <div class="hero">
         <div class="logo-cow">
-          🐄
+          <CowSprite
+            :size="80"
+            :skin="heroSkin"
+            idle-only
+          />
         </div>
         <h1 class="title">
           彩色牛牛
@@ -64,6 +75,15 @@ function handleStart() {
       </div>
 
       <button
+        type="button"
+        class="skin-btn"
+        @click="openPicker"
+      >
+        🎨 选择皮肤
+        <span class="skin-btn-current">{{ selectedSkin.name }}</span>
+      </button>
+
+      <button
         class="start-btn"
         @click="handleStart"
       >
@@ -74,6 +94,8 @@ function handleStart() {
         随机生成 4×4 ~ 15×15 的方格
       </p>
     </div>
+
+    <SkinPickerModal v-if="pickerOpen" />
   </div>
 </template>
 
@@ -139,7 +161,9 @@ function handleStart() {
 }
 
 .logo-cow {
-  font-size: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 8px;
   animation: float 3s ease-in-out infinite;
   filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
@@ -193,6 +217,34 @@ function handleStart() {
 .rule-icon {
   font-size: 18px;
   flex-shrink: 0;
+}
+
+.skin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.skin-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.skin-btn-current {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fbbf24;
 }
 
 .start-btn {

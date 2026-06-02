@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import GameGrid from '@/components/GameGrid.vue'
 import StatusBar from '@/components/StatusBar.vue'
 import WinModal from '@/components/WinModal.vue'
+import CowSprite from '@/components/CowSprite.vue'
 import { useGame, type HintInfo } from '@/composables/useGame'
 import { COLORS, COLOR_NAMES } from '@/utils/cowPlacer'
 
@@ -237,7 +238,12 @@ onUnmounted(() => {
           class="action-btn cow-btn"
           @click="handleRevealCow"
         >
-          🐄 +牛
+          <CowSprite
+            class="cow-btn-sprite"
+            :size="24"
+            idle-only
+          />
+          <span>+牛</span>
         </button>
         <button
           class="action-btn hint-btn"
@@ -640,9 +646,17 @@ onUnmounted(() => {
 }
 
 .cow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.15));
   border-color: rgba(34, 197, 94, 0.4);
   color: #4ade80;
+}
+
+.cow-btn-sprite {
+  flex-shrink: 0;
 }
 
 .cow-btn:hover {

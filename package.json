@@ -9,6 +9,10 @@
     "preview": "vite preview",
     "check": "vue-tsc -b",
     "generate:puzzles": "esbuild scripts/generate-puzzles.ts --bundle --platform=node --format=esm --outfile=.tmp/generate-puzzles.mjs && node .tmp/generate-puzzles.mjs",
+    "evaluate:puzzles": "esbuild scripts/evaluate-puzzles.ts --bundle --platform=node --format=esm --outfile=.tmp/evaluate-puzzles.mjs && node .tmp/evaluate-puzzles.mjs",
+    "generate:puzzles:eval": "npm run generate:puzzles && npm run evaluate:puzzles",
+    "audit:puzzles": "esbuild scripts/audit-puzzles.ts --bundle --platform=node --format=esm --outfile=.tmp/audit-puzzles.mjs && node .tmp/audit-puzzles.mjs",
+    "prune:manifest": "esbuild scripts/prune-manifest.ts --bundle --platform=node --format=esm --outfile=.tmp/prune-manifest.mjs && node .tmp/prune-manifest.mjs",
     "lint": "eslint . --ext .ts,.vue",
     "lint:fix": "eslint . --ext .ts,.vue --fix"
   },

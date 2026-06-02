@@ -145,25 +145,268 @@ function colorName(idx: number): string {
   return COLOR_NAMES[idx] || `颜色${idx + 1}`
 }
 
-export function getHint(board: BoardView): HintInfo | null {
-  const rules: ((board: BoardView) => HintInfo | null)[] = [
-    ruleSingleColor,
-    ruleSameLine,
-    ruleThreeCorner,
-    ruleFourCorner,
-    ruleLinePlusOne,
-    ruleOnlyOneActiveInLine,
-    ruleLineAllSameColor,
-    ruleNColorsNLines,
-    ruleNLinesOnlyNColors,
-    ruleSolutionSet,
-    ruleLimitedGuessCow,
-  ]
+const DIRS_4: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 
-  for (const rule of rules) {
+function getActiveNeighborsInSet(
+  activeSet: Set<string>,
+  r: number,
+  c: number,
+): [number, number][] {
+  const result: [number, number][] = []
+  for (const [dr, dc] of DIRS_4) {
+    const nr = r + dr
+    const nc = c + dc
+    if (activeSet.has(`${nr},${nc}`)) result.push([nr, nc])
+  }
+  return result
+}
+
+/** T 形：横（或竖）臂恰好 3 格连成一线，第 4 格从中间格伸出；返回横臂中间格坐标 */
+function findTShapeMiddle(active: [number, number][]): [number, number] | null {
+  if (active.length !== 4) return null
+  const activeSet = new Set(active.map(([r, c]) => `${r},${c}`))
+
+  for (const [r, c] of active) {
+    const neighbors = getActiveNeighborsInSet(activeSet, r, c)
+    if (neighbors.length !== 3) continue
+
+    const leftKey = `${r},${c - 1}`
+    const rightKey = `${r},${c + 1}`
+    if (activeSet.has(leftKey) && activeSet.has(rightKey)) {
+      const stem = neighbors.find(([nr]) => nr !== r)
+      if (!stem) continue
+      const expected = new Set([leftKey, `${r},${c}`, rightKey, `${stem[0]},${stem[1]}`])
+      if (expected.size === 4 && active.every(([ar, ac]) => expected.has(`${ar},${ac}`))) {
+        return [r, c]
+      }
+    }
+
+    const topKey = `${r - 1},${c}`
+    const bottomKey = `${r + 1},${c}`
+    if (activeSet.has(topKey) && activeSet.has(bottomKey)) {
+      const stem = neighbors.find(([, nc]) => nc !== c)
+      if (!stem) continue
+      const expected = new Set([topKey, `${r},${c}`, bottomKey, `${stem[0]},${stem[1]}`])
+      if (expected.size === 4 && active.every(([ar, ac]) => expected.has(`${ar},${ac}`))) {
+        return [r, c]
+      }
+    }
+  }
+  return null
+}
+
+function collectMidOrthogonalOtherColor(
+  board: BoardView,
+  activeSet: Set<string>,
+  mid: [number, number],
+  colorIdx: number,
+): [number, number][] {
+  const [r, c] = mid
+  const result: [number, number][] = []
+  for (const [dr, dc] of DIRS_4) {
+    const nr = r + dr
+    const nc = c + dc
+    if (nr < 0 || nr >= board.n || nc < 0 || nc >= board.n) continue
+    if (activeSet.has(`${nr},${nc}`)) continue
+    result.push([nr, nc])
+  }
+  return filterFlaggableOtherColor(board, result, colorIdx)
+}
+
+function ruleTShape(board: BoardView): HintInfo | null {
+  for (let colorIdx = 0; colorIdx < board.n; colorIdx++) {
+    const active = getActiveCells(board, colorIdx)
+    const mid = findTShapeMiddle(active)
+    if (!mid) continue
+
+    const activeSet = new Set(active.map(([r, c]) => `${r},${c}`))
+    const flaggable = collectMidOrthogonalOtherColor(board, activeSet, mid, colorIdx)
+    if (flaggable.length > 0) {
+      return {
+        ruleName: 'T字形',
+        description: `${colorName(colorIdx)}连成T形（一横三格），横臂中间格相邻的异色格可画叉`,
+        cells: flaggable,
+        type: 'flag',
+      }
+    }
+  }
+  return null
+}
+
+const DIRS_8: [number, number][] = [
+  [-1, -1], [-1, 0], [-1, 1],
+  [0, -1],           [0, 1],
+  [1, -1],  [1, 0],  [1, 1],
+]
+
+function cloneBoardView(board: BoardView): BoardView {
+  return {
+    n: board.n,
+    guessHintsUsed: board.guessHintsUsed ?? 0,
+    grid: board.grid.map((row) => row.map((cell) => ({ ...cell }))),
+  }
+}
+
+function simFlagCell(board: BoardView, row: number, col: number) {
+  const cell = board.grid[row][col]
+  if (cell.isRevealed || cell.isFlagged) return
+  cell.isFlagged = true
+}
+
+function simRevealCow(board: BoardView, row: number, col: number) {
+  const cell = board.grid[row][col]
+  if (cell.isRevealed) return
+  cell.isRevealed = true
+  cell.isFlagged = false
+
+  for (let c = 0; c < board.n; c++) {
+    if (c !== col) simFlagCell(board, row, c)
+  }
+  for (let r = 0; r < board.n; r++) {
+    if (r !== row) simFlagCell(board, r, col)
+  }
+  for (const [dr, dc] of DIRS_8) {
+    if (dr === 0 && dc === 0) continue
+    const nr = row + dr
+    const nc = col + dc
+    if (nr >= 0 && nr < board.n && nc >= 0 && nc < board.n) {
+      simFlagCell(board, nr, nc)
+    }
+  }
+}
+
+/** 在模拟盘上假定 (row,col) 为牛：揭开该格，同行同列及周围 8 格打叉 */
+function applyAssumedCow(board: BoardView, row: number, col: number) {
+  simRevealCow(board, row, col)
+}
+
+type SimApplyResult = 'ok' | 'badCow' | 'badFlag'
+
+function applyDeductiveHintToSim(
+  sim: BoardView,
+  truth: BoardView,
+  hint: HintInfo,
+): SimApplyResult {
+  if (hint.type === 'cow') {
+    for (const [r, c] of hint.cells) {
+      if (!truth.grid[r][c].hasCow) return 'badCow'
+      simRevealCow(sim, r, c)
+    }
+    return 'ok'
+  }
+
+  for (const [r, c] of hint.cells) {
+    if (truth.grid[r][c].hasCow) return 'badFlag'
+    simFlagCell(sim, r, c)
+  }
+  return 'ok'
+}
+
+/** 假定某格为牛后，在模拟盘上连续 deductive 推理，若推出错误牛或误标真牛则反证成立 */
+function simDeductionContradictsAssumption(board: BoardView, hr: number, hc: number): boolean {
+  const sim = cloneBoardView(board)
+  applyAssumedCow(sim, hr, hc)
+  const seen = new Set<string>()
+  const maxSteps = board.n * board.n
+
+  for (let step = 0; step < maxSteps; step++) {
+    const hint = getDeductiveHint(sim)
+    if (!hint) return false
+
+    const key = `${hint.type}:${hint.cells.map(([r, c]) => `${r},${c}`).sort().join('|')}`
+    if (seen.has(key)) return false
+    seen.add(key)
+
+    const result = applyDeductiveHintToSim(sim, board, hint)
+    if (result !== 'ok') return true
+  }
+
+  return false
+}
+
+const DEDUCTIVE_RULES: ((board: BoardView) => HintInfo | null)[] = [
+  ruleRevealedCowExclusion,
+  ruleSingleColor,
+  ruleSameLine,
+  ruleThreeCorner,
+  ruleFourCorner,
+  ruleTwoColorSingleAdjacency,
+  ruleTShape,
+  ruleLinePlusOne,
+  ruleOnlyOneActiveInLine,
+  ruleLineAllSameColor,
+  ruleNColorsNLines,
+  ruleNLinesOnlyNColors,
+  // ruleSolutionSet,
+]
+
+function getDeductiveHint(board: BoardView): HintInfo | null {
+  for (const rule of DEDUCTIVE_RULES) {
     const hint = rule(board)
     if (hint) return hint
   }
+  return null
+}
+
+function findMinActiveColorGroups(board: BoardView): { colorIdx: number; active: [number, number][] }[] {
+  let minCount = Infinity
+  const groups: { colorIdx: number; active: [number, number][] }[] = []
+
+  for (let colorIdx = 0; colorIdx < board.n; colorIdx++) {
+    const active = getActiveCells(board, colorIdx)
+    if (active.length === 0) continue
+    if (active.length < minCount) {
+      minCount = active.length
+      groups.length = 0
+      groups.push({ colorIdx, active })
+    } else if (active.length === minCount) {
+      groups.push({ colorIdx, active })
+    }
+  }
+
+  if (!Number.isFinite(minCount) || minCount < 2) return []
+  return groups
+}
+
+/** 其它规则均无时：对活跃格最少的颜色做假设反证 */
+function ruleHypothesisContradiction(board: BoardView): HintInfo | null {
+  const groups = findMinActiveColorGroups(board)
+  if (groups.length === 0) return null
+
+  const toFlag: [number, number][] = []
+
+  for (const { active } of groups) {
+    for (const [hr, hc] of active) {
+      if (simDeductionContradictsAssumption(board, hr, hc)) {
+        toFlag.push([hr, hc])
+      }
+    }
+  }
+
+  const flaggable = filterFlaggable(board, dedup(toFlag))
+  if (flaggable.length === 0) return null
+
+  const colorLabel = groups.length === 1
+    ? colorName(groups[0].colorIdx)
+    : '活跃格最少的颜色'
+
+  return {
+    ruleName: '假设反证',
+    description: `假定${colorLabel}某格为牛并标记其行列与周围后，推理得到的牛位置不成立，故该假设格可画叉`,
+    cells: flaggable,
+    type: 'flag',
+  }
+}
+
+export function getHint(board: BoardView): HintInfo | null {
+  const deductive = getDeductiveHint(board)
+  if (deductive) return deductive
+
+  const contradiction = ruleHypothesisContradiction(board)
+  if (contradiction) return contradiction
+
+  // 猜测提示暂关闭，题库与提示链校验均不依赖
+  // return ruleLimitedGuessCow(board)
   return null
 }
 
@@ -245,6 +488,77 @@ export function isHintSolvable(board: BoardView): boolean {
   }
 
   return cowsFound >= board.n
+}
+
+function collectExclusionAroundRevealedCow(
+  board: BoardView,
+  row: number,
+  col: number,
+): [number, number][] {
+  const result: [number, number][] = []
+  const seen = new Set<string>()
+
+  function add(r: number, c: number) {
+    if (r < 0 || r >= board.n || c < 0 || c >= board.n) return
+    if (r === row && c === col) return
+    const key = `${r},${c}`
+    if (seen.has(key)) return
+    seen.add(key)
+    result.push([r, c])
+  }
+
+  for (let c = 0; c < board.n; c++) {
+    if (c !== col) add(row, c)
+  }
+  for (let r = 0; r < board.n; r++) {
+    if (r !== row) add(r, col)
+  }
+  for (const [dr, dc] of DIRS_8) {
+    if (dr === 0 && dc === 0) continue
+    add(row + dr, col + dc)
+  }
+
+  return result
+}
+
+/** 已揭开的牛：其同行、同列及周围 8 格（不含牛格）可画叉 */
+function ruleRevealedCowExclusion(board: BoardView): HintInfo | null {
+  const cowCells: [number, number][] = []
+  for (let r = 0; r < board.n; r++) {
+    for (let c = 0; c < board.n; c++) {
+      const cell = board.grid[r][c]
+      if (cell.isRevealed && cell.hasCow) {
+        cowCells.push([r, c])
+      }
+    }
+  }
+  if (cowCells.length === 0) return null
+
+  const cells: [number, number][] = []
+  const seen = new Set<string>()
+  for (const [row, col] of cowCells) {
+    for (const [r, c] of collectExclusionAroundRevealedCow(board, row, col)) {
+      const key = `${r},${c}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      cells.push([r, c])
+    }
+  }
+
+  const flaggable = filterFlaggable(board, cells)
+  if (flaggable.length === 0) return null
+
+  const [r0, c0] = cowCells[0]
+  const description = cowCells.length === 1
+    ? `第${r0 + 1}行第${c0 + 1}列已揭开牛，其同行、同列及周围可画叉`
+    : `已揭开的牛所在行、列及周围可画叉`
+
+  return {
+    ruleName: '已揭开的牛',
+    description,
+    cells: flaggable,
+    type: 'flag',
+  }
 }
 
 function ruleSingleColor(board: BoardView): HintInfo | null {
@@ -355,6 +669,91 @@ function ruleThreeCorner(board: BoardView): HintInfo | null {
         description: `${colorName(colorIdx)}只有3格且不在同行列，夹角处的其他颜色可画叉`,
         cells: flaggable,
         type: 'flag',
+      }
+    }
+  }
+  return null
+}
+
+function isOrthogonallyAdjacent(a: [number, number], b: [number, number]): boolean {
+  return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1
+}
+
+/** 两活跃格四向相邻成线段：同行为横向线，同列为纵向线 */
+function twoActiveCellsFormLine(active: [number, number][]): 'row' | 'col' | null {
+  if (active.length !== 2) return null
+  const [[r0, c0], [r1, c1]] = active
+  if (!isOrthogonallyAdjacent(active[0], active[1])) return null
+  if (r0 === r1) return 'row'
+  if (c0 === c1) return 'col'
+  return null
+}
+
+function getUniqueCrossAdjacentPair(
+  activeA: [number, number][],
+  activeB: [number, number][],
+): [[number, number], [number, number]] | null {
+  let pair: [[number, number], [number, number]] | null = null
+  for (const a of activeA) {
+    for (const b of activeB) {
+      if (!isOrthogonallyAdjacent(a, b)) continue
+      if (pair) return null
+      pair = [a, b]
+    }
+  }
+  return pair
+}
+
+function otherActiveCell(active: [number, number][], cell: [number, number]): [number, number] {
+  const [r0, c0] = active[0]
+  return r0 === cell[0] && c0 === cell[1] ? active[1] : active[0]
+}
+
+function isOrthAdjacentToAny(cell: [number, number], targets: [number, number][]): boolean {
+  return targets.some((t) => isOrthogonallyAdjacent(cell, t))
+}
+
+function fourCellsNotAllSameRowOrCol(
+  activeA: [number, number][],
+  activeB: [number, number][],
+): boolean {
+  const all = [...activeA, ...activeB]
+  const sameRow = all.every(([r]) => r === all[0][0])
+  const sameCol = all.every(([, c]) => c === all[0][1])
+  return !sameRow && !sameCol
+}
+
+/** 两色各剩 2 活跃格（各自相连成线、两线平行、四格不同行且不同列），且仅一对异色相邻 → 该相邻两格可画叉 */
+function ruleTwoColorSingleAdjacency(board: BoardView): HintInfo | null {
+  for (let colorA = 0; colorA < board.n; colorA++) {
+    const activeA = getActiveCells(board, colorA)
+    const lineA = twoActiveCellsFormLine(activeA)
+    if (!lineA) continue
+
+    for (let colorB = colorA + 1; colorB < board.n; colorB++) {
+      const activeB = getActiveCells(board, colorB)
+      const lineB = twoActiveCellsFormLine(activeB)
+      if (!lineB || lineA !== lineB) continue
+      if (!fourCellsNotAllSameRowOrCol(activeA, activeB)) continue
+
+      const pair = getUniqueCrossAdjacentPair(activeA, activeB)
+      if (!pair) continue
+
+      const [touchA, touchB] = pair
+      const otherA = otherActiveCell(activeA, touchA)
+      const otherB = otherActiveCell(activeB, touchB)
+      if (isOrthAdjacentToAny(otherA, activeB)) continue
+      if (isOrthAdjacentToAny(otherB, activeA)) continue
+
+      const lineLabel = lineA === 'row' ? '横线' : '竖线'
+      const flaggable = filterFlaggable(board, [touchA, touchB])
+      if (flaggable.length > 0) {
+        return {
+          ruleName: '双色单邻',
+          description: `${colorName(colorA)}与${colorName(colorB)}各剩2格相连成平行${lineLabel}（四格不同行且不同列），且仅一对异色相邻，牛必在另两格，相邻的两格可画叉`,
+          cells: flaggable,
+          type: 'flag',
+        }
       }
     }
   }
@@ -796,6 +1195,7 @@ export function hasUniqueCowPlacement(board: BoardView): boolean {
   return countCowSolutions(board, 2) === 1
 }
 
+/** 已停用：getDeductiveHint 不再调用；保留供日后调整 */
 function ruleSolutionSet(board: BoardView): HintInfo | null {
   const { solutions, truncated, activeCells } = enumerateCowSolutions(board, {
     maxSolutions: 200,
@@ -810,7 +1210,7 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
     if (solutions.every((solution) => solution.has(key))) {
       return {
         ruleName: '唯一解定位',
-        description: `所有可行解都要求第${r + 1}行第${c + 1}列是牛`,
+        description: `所有可解行都要求第${r + 1}行第${c + 1}列是牛`,
         cells: [[r, c]],
         type: 'cow',
       }
@@ -824,7 +1224,7 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
   if (flaggable.length > 0) {
     return {
       ruleName: '唯一解排除',
-      description: '这些格子不出现在任何可行解中，可画叉',
+      description: '这些格子不出现在任何可解行中，可画叉',
       cells: flaggable,
       type: 'flag',
     }
@@ -833,6 +1233,7 @@ function ruleSolutionSet(board: BoardView): HintInfo | null {
   return null
 }
 
+/** 已停用：getHint 不再调用；保留供日后恢复 */
 function ruleLimitedGuessCow(board: BoardView): HintInfo | null {
   if ((board.guessHintsUsed ?? 0) >= 3) return null
 

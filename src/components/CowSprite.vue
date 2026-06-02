@@ -1,32 +1,52 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-
-const SPRITE_URL = `${import.meta.env.BASE_URL}keaitu_sprite.png`
-const COLS = 4
-const ROWS = 2
-const FRAME_COUNT = COLS * ROWS
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useSkin } from '@/composables/useSkin'
+import type { SkinConfig } from '@/utils/skins'
 
 const props = withDefaults(
   defineProps<{
     size?: number
     /** 是否循环播放；false 时停在第 0 帧 */
     animate?: boolean
+    /** 指定皮肤；不传则用当前已选皮肤 */
+    skin?: SkinConfig
+    /** 仅播放待机循环（用于预览） */
+    idleOnly?: boolean
   }>(),
   {
     size: 26,
     animate: true,
+    idleOnly: false,
   },
+)
+
+const { selectedSkin } = useSkin()
+
+const activeSkin = computed(() => props.skin ?? selectedSkin.value)
+const spriteUrl = computed(
+  () => `${import.meta.env.BASE_URL}${activeSkin.value.sprite}`,
+)
+
+const frameCount = computed(
+  () => activeSkin.value.cols * activeSkin.value.rows,
 )
 
 const frame = ref(0)
 let timer: ReturnType<typeof setInterval> | null = null
 
 const bgPosition = computed(() => {
-  const col = frame.value % COLS
-  const row = Math.floor(frame.value / COLS)
-  const x = COLS > 1 ? (col / (COLS - 1)) * 100 : 0
-  const y = ROWS > 1 ? (row / (ROWS - 1)) * 100 : 0
+  const cols = activeSkin.value.cols
+  const rows = activeSkin.value.rows
+  const col = frame.value % cols
+  const row = Math.floor(frame.value / cols)
+  const x = cols > 1 ? (col / (cols - 1)) * 100 : 0
+  const y = rows > 1 ? (row / (rows - 1)) * 100 : 0
   return `${x}% ${y}%`
+})
+
+const backgroundSize = computed(() => {
+  const { cols, rows } = activeSkin.value
+  return `${cols * 100}% ${rows * 100}%`
 })
 
 function stop() {
@@ -36,7 +56,6 @@ function stop() {
   }
 }
 
-/** 揭开时快速播一遍，再进入待机循环 */
 function playRevealThenIdle() {
   stop()
   let i = 0
@@ -44,7 +63,7 @@ function playRevealThenIdle() {
   timer = setInterval(() => {
     frame.value = i
     i += 1
-    if (i >= FRAME_COUNT) {
+    if (i >= frameCount.value) {
       stop()
       startIdleLoop()
     }
@@ -54,17 +73,34 @@ function playRevealThenIdle() {
 function startIdleLoop() {
   stop()
   timer = setInterval(() => {
-    frame.value = (frame.value + 1) % FRAME_COUNT
+    frame.value = (frame.value + 1) % frameCount.value
   }, 160)
 }
 
-onMounted(() => {
-  if (props.animate) {
-    playRevealThenIdle()
-  } else {
+function startAnimation() {
+  if (!props.animate) {
     frame.value = 0
+    return
   }
+  if (props.idleOnly) {
+    startIdleLoop()
+  } else {
+    playRevealThenIdle()
+  }
+}
+
+onMounted(startAnimation)
+
+watch(activeSkin, () => {
+  startAnimation()
 })
+
+watch(
+  () => [props.animate, props.idleOnly] as const,
+  () => {
+    startAnimation()
+  },
+)
 
 onUnmounted(stop)
 </script>
@@ -73,12 +109,13 @@ onUnmounted(stop)
   <span
     class="cow-sprite"
     role="img"
-    aria-label="牛"
+    :aria-label="activeSkin.ariaLabel"
     :style="{
       width: size + 'px',
       height: size + 'px',
-      backgroundImage: `url('${SPRITE_URL}')`,
+      backgroundImage: `url('${spriteUrl}')`,
       backgroundPosition: bgPosition,
+      backgroundSize: backgroundSize,
     }"
   />
 </template>
@@ -88,6 +125,5 @@ onUnmounted(stop)
   display: inline-block;
   flex-shrink: 0;
   background-repeat: no-repeat;
-  background-size: 400% 200%;
 }
 </style>

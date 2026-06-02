@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import CowSprite from '@/components/CowSprite.vue'
+
 defineProps<{
   cowsFound: number
   totalCows: number
@@ -16,7 +18,11 @@ const emit = defineEmits<{
 <template>
   <div class="status-bar">
     <div class="status-left">
-      <span class="cow-icon">🐄</span>
+      <CowSprite
+        class="cow-icon"
+        :size="28"
+        idle-only
+      />
       <span class="count">{{ cowsFound }} / {{ totalCows }}</span>
     </div>
     <div class="status-center">
@@ -32,6 +38,7 @@ const emit = defineEmits<{
       <button
         class="vip-btn"
         :class="{ active: isVip }"
+        :title="isVip ? '已开启：揭开牛后自动标记同行、同列与周围' : 'VIP：揭开牛后自动标记同行、同列与周围'"
         @click="emit('toggleVip')"
       >
         👑 VIP
@@ -65,7 +72,7 @@ const emit = defineEmits<{
 }
 
 .cow-icon {
-  font-size: 24px;
+  display: block;
 }
 
 .count {

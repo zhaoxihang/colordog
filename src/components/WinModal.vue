@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import CowSprite from '@/components/CowSprite.vue'
+import { useSkin } from '@/composables/useSkin'
+
 defineProps<{
   loading?: boolean
 }>()
@@ -6,6 +10,12 @@ defineProps<{
 defineEmits<{
   playAgain: []
 }>()
+
+const { selectedSkin } = useSkin()
+
+const winSubtitle = computed(
+  () => `你找到了所有的${selectedSkin.value.ariaLabel}！`,
+)
 </script>
 
 <template>
@@ -21,10 +31,17 @@ defineEmits<{
         恭喜通关！
       </h2>
       <p class="win-subtitle">
-        你找到了所有的牛！
+        {{ winSubtitle }}
       </p>
       <div class="win-cows">
-        🐄🐄🐄
+        <CowSprite
+          v-for="i in 3"
+          :key="i"
+          class="win-cow-sprite"
+          :style="{ animationDelay: `${(i - 1) * 0.15}s` }"
+          :size="52"
+          idle-only
+        />
       </div>
       <button
         class="play-again-btn"
@@ -81,9 +98,20 @@ defineEmits<{
 }
 
 .win-cows {
-  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   margin-bottom: 24px;
-  letter-spacing: 8px;
+}
+
+.win-cow-sprite {
+  animation: win-cow-bounce 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes win-cow-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
 }
 
 .play-again-btn {
