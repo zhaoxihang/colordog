@@ -7,6 +7,7 @@ import {
   loadRandomPuzzleAny,
   type StoredPuzzle,
 } from '@/utils/puzzleLibrary'
+import { parsePuzzleImport, type ParsePuzzleImportResult } from '@/utils/puzzleImport'
 
 export type { HintInfo }
 
@@ -14,7 +15,7 @@ export interface PuzzleJSON {
   n: number
   mode: GameMode
   colorGrid: number[][]
-  cows: [number, number][]
+  cows?: [number, number][]
 }
 
 const state = ref<GameState>(createGameState(5, 'easy', { hintCheck: false, layout: 'grow' }))
@@ -78,7 +79,7 @@ export function useGame() {
       mode: puzzle.mode,
       grid: pgrid,
       cowsFound: 0,
-      totalCows: pn,
+      totalCows: puzzle.cows.length,
       isWon: false,
       guessHintsUsed: 0,
     }
@@ -274,20 +275,20 @@ export function useGame() {
     return { n: g.n, mode: g.mode, colorGrid, cows }
   }
 
+  const lastImportMessage = ref('')
   function importGame(json: string): boolean {
-    try {
-      const puzzle: PuzzleJSON = JSON.parse(json)
-      if (!puzzle.n || !puzzle.colorGrid || !puzzle.cows || !puzzle.mode) return false
-      if (puzzle.colorGrid.length !== puzzle.n) return false
-      if (puzzle.cows.length !== puzzle.n) return false
-
-      state.value = buildGameFromPuzzle({ id: 'imported', ...puzzle })
-      showWin.value = false
-      resetInteractionState()
-      return true
-    } catch {
+    lastImportMessage.value = ''
+    const result: ParsePuzzleImportResult = parsePuzzleImport(json)
+    if (!result.ok) {
+      lastImportMessage.value = result.reason
       return false
     }
+
+    state.value = buildGameFromPuzzle({ id: 'imported', ...result.puzzle })
+    showWin.value = false
+    resetInteractionState()
+    lastImportMessage.value = result.note
+    return true
   }
 
   function revealRandomCow(): boolean {
@@ -357,6 +358,7 @@ export function useGame() {
     getCellColor,
     exportGame,
     importGame,
+    lastImportMessage,
     revealRandomCow,
     getHint,
     applyHint,

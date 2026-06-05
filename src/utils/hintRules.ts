@@ -27,6 +27,18 @@ function getActiveCells(board: BoardView, colorIdx: number): [number, number][] 
   return cells
 }
 
+function colorHasRevealedCow(board: BoardView, colorIdx: number): boolean {
+  for (let r = 0; r < board.n; r++) {
+    for (let c = 0; c < board.n; c++) {
+      const cell = board.grid[r][c]
+      if (cell.colorIndex === colorIdx && cell.isRevealed && cell.hasCow) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
 function getActiveCellsInLine(board: BoardView, lineIdx: number, direction: 'row' | 'col'): [number, number][] {
   const cells: [number, number][] = []
   for (let i = 0; i < board.n; i++) {
@@ -326,6 +338,7 @@ function simDeductionContradictsAssumption(board: BoardView, hr: number, hc: num
 
 const DEDUCTIVE_RULES: ((board: BoardView) => HintInfo | null)[] = [
   ruleRevealedCowExclusion,
+  ruleColorCowAlreadyRevealed,
   ruleSingleColor,
   ruleSameLine,
   ruleThreeCorner,
@@ -561,14 +574,37 @@ function ruleRevealedCowExclusion(board: BoardView): HintInfo | null {
   }
 }
 
+/** 某色牛已揭开 → 该色其余活跃格可画叉（每种颜色恰一头牛） */
+function ruleColorCowAlreadyRevealed(board: BoardView): HintInfo | null {
+  for (let colorIdx = 0; colorIdx < board.n; colorIdx++) {
+    if (!colorHasRevealedCow(board, colorIdx)) continue
+
+    const active = getActiveCells(board, colorIdx)
+    if (active.length === 0) continue
+
+    const flaggable = filterFlaggable(board, active)
+    if (flaggable.length > 0) {
+      return {
+        ruleName: '该色牛已揭开',
+        description: `${colorName(colorIdx)}的牛已揭开，该色其余活跃格可画叉`,
+        cells: flaggable,
+        type: 'flag',
+      }
+    }
+  }
+  return null
+}
+
 function ruleSingleColor(board: BoardView): HintInfo | null {
   for (let colorIdx = 0; colorIdx < board.n; colorIdx++) {
+    if (colorHasRevealedCow(board, colorIdx)) continue
+
     const active = getActiveCells(board, colorIdx)
     if (active.length !== 1) continue
     const [r, c] = active[0]
     return {
       ruleName: '唯一颜色',
-      description: `${colorName(colorIdx)}只剩1格，这格必定是牛`,
+      description: `${colorName(colorIdx)}只剩1格且该色牛未揭开，这格必定是牛`,
       cells: [[r, c]],
       type: 'cow',
     }
@@ -1193,6 +1229,240 @@ export function countCowSolutions(board: BoardView, limit = 2): number {
 
 export function hasUniqueCowPlacement(board: BoardView): boolean {
   return countCowSolutions(board, 2) === 1
+}
+
+export function buildBoardFromColorGrid(n: number, colorGrid: number[][]): BoardView {
+  return {
+    n,
+    grid: colorGrid.map((row, r) =>
+      row.map((colorIndex, c) => ({
+        colorIndex,
+        hasCow: false,
+        isRevealed: false,
+        isFlagged: false,
+        isWrong: false,
+      })),
+    ),
+  }
+}
+
+function solutionSetToCows(solution: Set<string>): [number, number][] {
+  return [...solution].map((key) => {
+    const [r, c] = key.split(',').map(Number)
+    return [r, c] as [number, number]
+  })
+}
+
+/** 枚举完整放牛方案：唯一解或唯一「提示链可解」方案时返回，否则 null */
+export function tryInferFullCowPositions(
+  n: number,
+  colorGrid: number[][],
+): [number, number][] | null {
+  const board = buildBoardFromColorGrid(n, colorGrid)
+  const maxNodes = Math.min(120_000, 8_000 + n * n * 600)
+  const { solutions, truncated } = enumerateCowSolutions(board, {
+    maxSolutions: 50,
+    maxNodes,
+    allowFullBoard: true,
+  })
+
+  if (truncated || solutions.length === 0) return null
+  if (solutions.length === 1) return solutionSetToCows(solutions[0])
+
+  const hintSolvable = solutions.filter((sol) => {
+    const testBoard = buildBoardFromColorGrid(n, colorGrid)
+    for (const key of sol) {
+      const [r, c] = key.split(',').map(Number)
+      testBoard.grid[r][c].hasCow = true
+    }
+    return isHintSolvable(testBoard)
+  })
+
+  if (hintSolvable.length === 1) return solutionSetToCows(hintSolvable[0])
+  return null
+}
+
+export interface InferenceStepLog {
+  step: number
+  ruleName: string
+  type: 'flag' | 'cow'
+  description: string
+  cellsText: string
+}
+
+export interface HintDeductionResult {
+  cows: [number, number][]
+  steps: InferenceStepLog[]
+  stopReason: 'done' | 'no_hint' | 'loop' | 'max_steps'
+}
+
+function formatInferenceCells(cells: [number, number][]): string {
+  if (cells.length === 0) return ''
+  if (cells.length <= 6) {
+    return cells.map(([r, c]) => `(${r + 1},${c + 1})`).join(' ')
+  }
+  return `${cells.length} 格`
+}
+
+/**
+ * 用当前提示链推演，能确定多少牛就标记多少（不要求布局有完整解）。
+ */
+export function inferCowsByHintDeduction(
+  n: number,
+  colorGrid: number[][],
+): HintDeductionResult {
+  const testBoard = buildBoardFromColorGrid(n, colorGrid)
+  const seenHints = new Set<string>()
+  const maxSteps = n * n * 4
+  const steps: InferenceStepLog[] = []
+
+  function flagCell(row: number, col: number) {
+    const cell = testBoard.grid[row][col]
+    if (cell.isRevealed || cell.isFlagged) return
+    cell.isFlagged = true
+  }
+
+  function revealDeducedCow(row: number, col: number) {
+    const cell = testBoard.grid[row][col]
+    if (cell.isRevealed) return
+    cell.hasCow = true
+    cell.isRevealed = true
+    cell.isFlagged = false
+
+    for (let c = 0; c < n; c++) {
+      if (c !== col) flagCell(row, c)
+    }
+    for (let r = 0; r < n; r++) {
+      if (r !== row) flagCell(r, col)
+    }
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue
+        const nr = row + dr
+        const nc = col + dc
+        if (nr >= 0 && nr < n && nc >= 0 && nc < n) flagCell(nr, nc)
+      }
+    }
+  }
+
+  let stopReason: HintDeductionResult['stopReason'] = 'no_hint'
+
+  for (let step = 0; step < maxSteps; step++) {
+    const hint = getHint(testBoard)
+    if (!hint) {
+      stopReason = 'no_hint'
+      break
+    }
+
+    const key = `${hint.type}:${hint.cells.map(([r, c]) => `${r},${c}`).sort().join('|')}`
+    if (seenHints.has(key)) {
+      stopReason = 'loop'
+      break
+    }
+    seenHints.add(key)
+
+    steps.push({
+      step: steps.length + 1,
+      ruleName: hint.ruleName,
+      type: hint.type,
+      description: hint.description,
+      cellsText: formatInferenceCells(hint.cells),
+    })
+
+    if (hint.type === 'cow') {
+      for (const [r, c] of hint.cells) {
+        revealDeducedCow(r, c)
+      }
+    } else {
+      for (const [r, c] of hint.cells) {
+        if (testBoard.grid[r][c].hasCow) continue
+        flagCell(r, c)
+      }
+    }
+
+    if (step === maxSteps - 1) stopReason = 'max_steps'
+    else stopReason = 'done'
+  }
+
+  const cows: [number, number][] = []
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (testBoard.grid[r][c].hasCow) cows.push([r, c])
+    }
+  }
+  return { cows, steps, stopReason }
+}
+
+const STOP_REASON_LABEL: Record<HintDeductionResult['stopReason'], string> = {
+  done: '推演链已应用完当前可用提示',
+  no_hint: '无更多可用提示，推演停止',
+  loop: '提示重复，推演停止',
+  max_steps: '达到步数上限，推演停止',
+}
+
+export interface ImportInferenceResult {
+  cows: [number, number][]
+  note: string
+  deductionLog: InferenceStepLog[]
+  stopReason: string | null
+}
+
+export function inferCowsForImport(
+  n: number,
+  colorGrid: number[][],
+): ImportInferenceResult {
+  const full = tryInferFullCowPositions(n, colorGrid)
+  if (full && full.length === n) {
+    return {
+      cows: full,
+      note: '已根据颜色布局推断全部牛的位置',
+      deductionLog: [{
+        step: 1,
+        ruleName: '枚举唯一解',
+        type: 'cow',
+        description: `在 ${n}×${n} 布局下找到唯一合法放牛方案`,
+        cellsText: formatInferenceCells(full),
+      }],
+      stopReason: null,
+    }
+  }
+
+  const { cows: deduced, steps, stopReason } = inferCowsByHintDeduction(n, colorGrid)
+  if (deduced.length > 0) {
+    const note = deduced.length === n
+      ? '已通过推演链推断全部牛的位置'
+      : `已通过推演链推断 ${deduced.length}/${n} 头牛（布局可能无解或不完整）`
+    return {
+      cows: deduced,
+      note,
+      deductionLog: steps,
+      stopReason: STOP_REASON_LABEL[stopReason],
+    }
+  }
+
+  if (full && full.length > 0) {
+    return {
+      cows: full,
+      note: `枚举得到 ${full.length}/${n} 头牛（未满足完整约束，仍可导入）`,
+      deductionLog: [{
+        step: 1,
+        ruleName: '枚举多解',
+        type: 'cow',
+        description: `采用其中一种放牛方案（共 ${full.length} 头）`,
+        cellsText: formatInferenceCells(full),
+      }],
+      stopReason: null,
+    }
+  }
+
+  return {
+    cows: [],
+    note: '未能推断牛的位置，已按无牛布局导入',
+    deductionLog: steps,
+    stopReason: steps.length > 0
+      ? STOP_REASON_LABEL[stopReason]
+      : '无任何可用推演步骤',
+  }
 }
 
 /** 已停用：getDeductiveHint 不再调用；保留供日后调整 */

@@ -90,6 +90,14 @@ function handleStart() {
         🎮 开始游戏
       </button>
 
+      <button
+        type="button"
+        class="tool-btn"
+        @click="router.push('/tool')"
+      >
+        🖼️ 图片识别关卡
+      </button>
+
       <p class="hint">
         随机生成 4×4 ~ 15×15 的方格
       </p>
@@ -268,6 +276,25 @@ function handleStart() {
 
 .start-btn:active {
   transform: scale(0.97);
+}
+
+.tool-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
 }
 
 .hint {

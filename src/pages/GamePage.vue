@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import GameGrid from '@/components/GameGrid.vue'
 import StatusBar from '@/components/StatusBar.vue'
 import WinModal from '@/components/WinModal.vue'
 import CowSprite from '@/components/CowSprite.vue'
+import ColorGridTool from '@/components/ColorGridTool.vue'
 import { useGame, type HintInfo } from '@/composables/useGame'
 import { COLORS, COLOR_NAMES } from '@/utils/cowPlacer'
 
 const router = useRouter()
+const route = useRoute()
 const {
   n,
   grid,
@@ -25,17 +27,20 @@ const {
   endDrag,
   exportGame,
   importGame,
+  lastImportMessage,
   revealRandomCow,
   getHint,
   applyHint,
 } = useGame()
 
 const showPanel = ref(false)
+const ioPanelRef = ref<HTMLElement | null>(null)
 const jsonText = ref('')
 const importText = ref('')
 const copySuccess = ref(false)
 const importSuccess = ref(false)
 const importError = ref(false)
+const importErrorText = ref('')
 const currentHint = ref<HintInfo | null>(null)
 const hintCellsSet = ref<Set<string>>(new Set())
 
@@ -66,10 +71,27 @@ function handleGlobalTouchEnd() {
   endDrag()
 }
 
+async function scrollToIoPanel() {
+  await nextTick()
+  ioPanelRef.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+async function openIoPanel() {
+  showPanel.value = true
+  await scrollToIoPanel()
+}
+
+async function toggleIoPanel() {
+  showPanel.value = !showPanel.value
+  if (showPanel.value) {
+    await scrollToIoPanel()
+  }
+}
+
 function handleExport() {
   const data = exportGame()
   jsonText.value = JSON.stringify(data, null, 2)
-  showPanel.value = true
+  void openIoPanel()
 }
 
 function handleCopy() {
@@ -79,17 +101,27 @@ function handleCopy() {
   })
 }
 
-function handleImport() {
+async function onImageJsonGenerated(json: string) {
+  importText.value = json
+  await openIoPanel()
+}
+
+async function handleImport() {
   if (!importText.value.trim()) return
   const ok = importGame(importText.value.trim())
   if (ok) {
     importSuccess.value = true
     importError.value = false
-    setTimeout(() => { importSuccess.value = false }, 1500)
+    importErrorText.value = ''
+    setTimeout(() => { importSuccess.value = false }, 2500)
   } else {
     importError.value = true
     importSuccess.value = false
-    setTimeout(() => { importError.value = false }, 2000)
+    importErrorText.value = lastImportMessage.value || '导入失败'
+    setTimeout(() => {
+      importError.value = false
+      importErrorText.value = ''
+    }, 4000)
   }
 }
 
@@ -147,6 +179,17 @@ onMounted(() => {
   ensureGameStarted()
   window.addEventListener('mouseup', handleGlobalMouseUp)
   window.addEventListener('touchend', handleGlobalTouchEnd)
+
+  const pending = sessionStorage.getItem('colordog.pendingImport')
+  if (pending) {
+    sessionStorage.removeItem('colordog.pendingImport')
+    importText.value = pending
+    void openIoPanel().then(() => {
+      if (route.query.import === '1') {
+        handleImport()
+      }
+    })
+  }
 })
 
 onUnmounted(() => {
@@ -156,7 +199,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="game-page">
+  <div
+    class="game-page"
+    :class="{ 'panel-open': showPanel }"
+  >
     <div class="bg-pattern" />
 
     <div class="game-layout">
@@ -263,7 +309,7 @@ onUnmounted(() => {
         <button
           class="io-btn import-toggle-btn"
           :class="{ active: showPanel }"
-          @click="showPanel = !showPanel"
+          @click="toggleIoPanel"
         >
           📥 导入
         </button>
@@ -271,6 +317,7 @@ onUnmounted(() => {
 
       <div
         v-if="showPanel"
+        ref="ioPanelRef"
         class="io-panel"
       >
         <div class="panel-section">
@@ -294,22 +341,48 @@ onUnmounted(() => {
 
         <div class="panel-section">
           <div class="panel-header">
+            <span class="panel-title">图片识别 → JSON</span>
+            <router-link
+              to="/tool"
+              class="tool-link"
+            >
+              全屏工具
+            </router-link>
+          </div>
+          <ColorGridTool @generated="onImageJsonGenerated" />
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-header">
             <span class="panel-title">导入 JSON</span>
             <button
               class="load-btn"
               :class="{ success: importSuccess, error: importError }"
               @click="handleImport"
             >
-              {{ importSuccess ? '✓ 成功' : importError ? '✗ 格式错误' : '▶ 加载' }}
+              {{ importSuccess ? '✓ 成功' : importError ? '✗ 失败' : '▶ 加载' }}
             </button>
           </div>
+          <p
+            v-if="importSuccess && lastImportMessage"
+            class="import-hint success"
+          >
+            {{ lastImportMessage }}
+          </p>
+          <p
+            v-if="importError && importErrorText"
+            class="import-hint error"
+          >
+            {{ importErrorText }}
+          </p>
           <textarea
             v-model="importText"
             class="json-area"
-            placeholder="粘贴 JSON 数据..."
+            placeholder="粘贴 JSON（可只含 n、mode、colorGrid；无 cows 时自动推演补全）"
             rows="6"
           />
         </div>
+
       </div>
     </div>
 
@@ -331,9 +404,19 @@ onUnmounted(() => {
 <style scoped>
 .game-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   background: linear-gradient(180deg, #0c1f17 0%, #132e1f 40%, #1a4430 100%);
   position: relative;
-  overflow: auto;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.game-page.panel-open {
+  height: auto;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .bg-pattern {
@@ -350,7 +433,24 @@ onUnmounted(() => {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.game-page.panel-open .game-layout {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.game-page.panel-open .play-area {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.game-page.panel-open .grid-area {
+  overflow: visible;
 }
 
 .top-bar {
@@ -396,16 +496,19 @@ onUnmounted(() => {
   justify-content: center;
   min-height: 0;
   width: 100%;
-  padding: 0 12px 4px;
+  padding: 0 8px 2px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .grid-area {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .hint-bar {
@@ -550,10 +653,12 @@ onUnmounted(() => {
 }
 
 .io-panel {
-  padding: 0 20px 16px;
+  padding: 0 20px 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 12px;
+  scroll-margin-bottom: 16px;
 }
 
 .panel-section {
@@ -574,6 +679,16 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.7);
+}
+
+.tool-link {
+  font-size: 12px;
+  color: #fbbf24;
+  text-decoration: none;
+}
+
+.tool-link:hover {
+  text-decoration: underline;
 }
 
 .copy-btn,
@@ -626,6 +741,20 @@ onUnmounted(() => {
 
 .json-area::placeholder {
   color: rgba(255, 255, 255, 0.25);
+}
+
+.import-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.import-hint.success {
+  color: #4ade80;
+}
+
+.import-hint.error {
+  color: #f87171;
 }
 
 .action-bar {
@@ -701,15 +830,19 @@ onUnmounted(() => {
 
 @media (max-width: 600px) {
   .top-bar {
-    padding: 8px 12px;
+    padding: 6px 10px;
   }
 
   .game-title {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .play-area {
-    padding: 0 8px 4px;
+    padding: 0 4px 2px;
+  }
+
+  .action-bar {
+    flex-shrink: 0;
   }
 
   .hint-bar {

@@ -164,15 +164,16 @@ const emit = defineEmits<{
 
 @media (max-width: 600px) {
   .status-bar {
-    flex-wrap: wrap;
-    padding: 8px 10px;
-    gap: 8px;
+    flex-wrap: nowrap;
+    padding: 6px 8px;
+    gap: 6px;
   }
 
   .status-center {
-    order: 3;
-    flex: 1 1 100%;
+    order: 0;
+    flex: 1;
     max-width: none;
+    min-width: 0;
   }
 
   .count {
