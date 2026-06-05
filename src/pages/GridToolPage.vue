@@ -34,7 +34,7 @@ function goImportInGame() {
     </div>
 
     <p class="intro">
-      拖入彩色方格截图，自动识别为 <code>n × n</code> 的 colorGrid JSON（无 cows，导入游戏时会自动推演补全）。
+      拖入彩色方格截图，自动识别为 <code>n × n</code> 的 colorGrid JSON；识别错的格子可点击画叉排除（无 cows，导入游戏时会自动推演补全）。
     </p>
 
     <div class="tool-card">

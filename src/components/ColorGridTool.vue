@@ -10,16 +10,71 @@ const emit = defineEmits<{
 const dropRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const outputJson = ref('')
-const previewGrid = ref<number[][] | null>(null)
+const sourceGrid = ref<number[][] | null>(null)
+const excludedCells = ref<Set<string>>(new Set())
 const statusText = ref('拖入图片或点击选择')
 const isDragging = ref(false)
 const copySuccess = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-function emitResult(json: string, grid: number[][]) {
+function cellKey(r: number, c: number): string {
+  return `${r},${c}`
+}
+
+function isExcluded(r: number, c: number): boolean {
+  return excludedCells.value.has(cellKey(r, c))
+}
+
+function buildFilteredGrid(grid: number[][], excluded: Set<string>): number[][] | null {
+  const rows: number[][] = []
+  for (let r = 0; r < grid.length; r++) {
+    const filtered = grid[r].filter((_, c) => !excluded.has(cellKey(r, c)))
+    if (filtered.length > 0) rows.push(filtered)
+  }
+  if (rows.length === 0) return null
+  const len = rows[0].length
+  if (len !== rows.length || !rows.every((row) => row.length === len)) return null
+  return rows
+}
+
+function syncOutput() {
+  if (!sourceGrid.value) return
+
+  const filtered = buildFilteredGrid(sourceGrid.value, excludedCells.value)
+  const excludedCount = excludedCells.value.size
+  const sourceN = sourceGrid.value.length
+
+  if (!filtered) {
+    outputJson.value = ''
+    statusText.value = excludedCount > 0
+      ? `已排除 ${excludedCount} 格，当前不是 ${sourceN}×${sourceN} 方形网格，请继续调整`
+      : `已识别 ${sourceN}×${sourceN} 色块网格`
+    return
+  }
+
+  const result = { n: filtered.length, mode: 'easy' as const, colorGrid: filtered }
+  const json = JSON.stringify(result, null, 2)
   outputJson.value = json
-  previewGrid.value = grid
+  statusText.value = excludedCount > 0
+    ? `已识别 ${filtered.length}×${filtered.length}（已排除 ${excludedCount} 格）`
+    : `已识别 ${filtered.length}×${filtered.length} 色块网格`
   emit('generated', json)
+}
+
+function setSourceGrid(grid: number[][]) {
+  sourceGrid.value = grid
+  excludedCells.value = new Set()
+  syncOutput()
+}
+
+function toggleExclude(r: number, c: number) {
+  if (!sourceGrid.value) return
+  const key = cellKey(r, c)
+  const next = new Set(excludedCells.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  excludedCells.value = next
+  syncOutput()
 }
 
 async function processFile(file: File) {
@@ -33,7 +88,8 @@ async function processFile(file: File) {
     const result = await loadImageFileToColorGrid(file)
     if (!result) {
       statusText.value = '未识别到足够色块，请换一张图'
-      previewGrid.value = null
+      sourceGrid.value = null
+      excludedCells.value = new Set()
       outputJson.value = ''
       return
     }
@@ -51,9 +107,7 @@ async function processFile(file: File) {
       img.src = url
     }
 
-    const json = JSON.stringify(result, null, 2)
-    emitResult(json, result.colorGrid)
-    statusText.value = `已识别 ${result.n}×${result.n} 色块网格`
+    setSourceGrid(result.colorGrid)
   } catch {
     statusText.value = '图片处理失败'
   }
@@ -104,7 +158,7 @@ function cellColor(index: number): string {
     <div
       ref="dropRef"
       class="drop-zone"
-      :class="{ dragging: isDragging, 'has-result': !!previewGrid }"
+      :class="{ dragging: isDragging, 'has-result': !!sourceGrid }"
       @dragover="onDragOver"
       @dragleave="onDragLeave"
       @drop="onDrop"
@@ -134,21 +188,48 @@ function cellColor(index: number): string {
     />
 
     <div
-      v-if="previewGrid"
-      class="grid-preview"
+      v-if="sourceGrid"
+      class="grid-preview-wrap"
     >
-      <div
-        v-for="(row, r) in previewGrid"
-        :key="r"
-        class="preview-row"
-      >
+      <p class="grid-preview-hint">
+        点击错误格子画叉排除（再点一次取消）
+      </p>
+      <div class="grid-preview">
         <div
-          v-for="(colorIdx, c) in row"
-          :key="c"
-          class="preview-cell"
-          :style="{ backgroundColor: cellColor(colorIdx) }"
-          :title="`颜色 ${colorIdx}`"
-        />
+          v-for="(row, r) in sourceGrid"
+          :key="r"
+          class="preview-row"
+        >
+          <button
+            v-for="(colorIdx, c) in row"
+            :key="c"
+            type="button"
+            class="preview-cell"
+            :class="{ excluded: isExcluded(r, c) }"
+            :style="{ backgroundColor: cellColor(colorIdx) }"
+            :title="isExcluded(r, c) ? '已排除，点击恢复' : `颜色 ${colorIdx}，点击排除`"
+            @click.stop="toggleExclude(r, c)"
+          >
+            <svg
+              v-if="isExcluded(r, c)"
+              class="preview-cross"
+              viewBox="0 0 24 24"
+            >
+              <line
+                x1="4" y1="4" x2="20" y2="20"
+                stroke="rgba(255, 80, 80, 0.95)"
+                stroke-width="3.5"
+                stroke-linecap="round"
+              />
+              <line
+                x1="20" y1="4" x2="4" y2="20"
+                stroke="rgba(255, 80, 80, 0.95)"
+                stroke-width="3.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -235,11 +316,23 @@ function cellColor(index: number): string {
   display: block;
 }
 
+.grid-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: flex-start;
+}
+
+.grid-preview-hint {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 .grid-preview {
   display: inline-flex;
   flex-direction: column;
   gap: 2px;
-  align-self: flex-start;
   padding: 8px;
   background: rgba(0, 0, 0, 0.25);
   border-radius: 8px;
@@ -251,10 +344,35 @@ function cellColor(index: number): string {
 }
 
 .preview-cell {
-  width: 20px;
-  height: 20px;
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.preview-cell:hover {
+  transform: scale(1.08);
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.preview-cell.excluded {
+  opacity: 0.45;
+  border-color: rgba(255, 80, 80, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(255, 80, 80, 0.35);
+}
+
+.preview-cross {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(255, 80, 80, 0.5));
 }
 
 .json-output {

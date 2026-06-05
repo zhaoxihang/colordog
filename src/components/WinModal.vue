@@ -9,6 +9,7 @@ defineProps<{
 
 defineEmits<{
   playAgain: []
+  viewBoard: []
 }>()
 
 const { selectedSkin } = useSkin()
@@ -43,13 +44,22 @@ const winSubtitle = computed(
           idle-only
         />
       </div>
-      <button
-        class="play-again-btn"
-        :disabled="loading"
-        @click="$emit('playAgain')"
-      >
-        {{ loading ? '加载中…' : '🔄 再来一局' }}
-      </button>
+      <div class="win-actions">
+        <button
+          class="view-board-btn"
+          :disabled="loading"
+          @click="$emit('viewBoard')"
+        >
+          👀 欣赏杰作
+        </button>
+        <button
+          class="play-again-btn"
+          :disabled="loading"
+          @click="$emit('playAgain')"
+        >
+          {{ loading ? '加载中…' : '🔄 再来一局' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -114,16 +124,43 @@ const winSubtitle = computed(
   to { transform: translateY(-10px); }
 }
 
+.win-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.view-board-btn,
 .play-again-btn {
-  padding: 12px 32px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  padding: 12px 24px;
   border: none;
   border-radius: 12px;
-  color: #1a1a1a;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.view-board-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.view-board-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: scale(1.04);
+}
+
+.view-board-btn:active {
+  transform: scale(0.97);
+}
+
+.play-again-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1a1a1a;
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
 }
 
@@ -136,6 +173,7 @@ const winSubtitle = computed(
   transform: scale(0.97);
 }
 
+.view-board-btn:disabled,
 .play-again-btn:disabled {
   opacity: 0.65;
   cursor: wait;

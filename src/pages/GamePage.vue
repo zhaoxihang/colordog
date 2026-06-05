@@ -59,6 +59,10 @@ async function handlePlayAgain() {
   await startGame()
 }
 
+function handleViewBoard() {
+  showWin.value = false
+}
+
 function handleBackHome() {
   router.push('/')
 }
@@ -389,6 +393,7 @@ onUnmounted(() => {
     <WinModal
       v-if="showWin"
       :loading="isStartingGame"
+      @view-board="handleViewBoard"
       @play-again="handlePlayAgain"
     />
 
