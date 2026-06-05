@@ -574,7 +574,7 @@ function ruleRevealedCowExclusion(board: BoardView): HintInfo | null {
   }
 }
 
-/** 某色牛已揭开 → 该色其余活跃格可画叉（每种颜色恰一头牛） */
+/** 某色牛已揭开 → 该色其余活跃格可画叉（每种颜色恰一头牛）  */
 function ruleColorCowAlreadyRevealed(board: BoardView): HintInfo | null {
   for (let colorIdx = 0; colorIdx < board.n; colorIdx++) {
     if (!colorHasRevealedCow(board, colorIdx)) continue
