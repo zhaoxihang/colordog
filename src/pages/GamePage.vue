@@ -28,6 +28,8 @@ const {
   exportGame,
   importGame,
   lastImportMessage,
+  lastImportDeductionLog,
+  lastImportDeductionStop,
   revealRandomCow,
   getHint,
   applyHint,
@@ -35,6 +37,7 @@ const {
 
 const showPanel = ref(false)
 const ioPanelRef = ref<HTMLElement | null>(null)
+const deductionLogRef = ref<HTMLElement | null>(null)
 const jsonText = ref('')
 const importText = ref('')
 const copySuccess = ref(false)
@@ -118,6 +121,10 @@ async function handleImport() {
     importError.value = false
     importErrorText.value = ''
     setTimeout(() => { importSuccess.value = false }, 2500)
+    if (lastImportDeductionLog.value.length > 0) {
+      await nextTick()
+      deductionLogRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   } else {
     importError.value = true
     importSuccess.value = false
@@ -385,6 +392,42 @@ onUnmounted(() => {
             placeholder="粘贴 JSON（可只含 n、mode、colorGrid；无 cows 时自动推演补全）"
             rows="6"
           />
+        </div>
+
+        <div
+          v-if="lastImportDeductionLog.length > 0"
+          ref="deductionLogRef"
+          class="panel-section deduction-log-section"
+        >
+          <div class="panel-header">
+            <span class="panel-title">推演过程（{{ lastImportDeductionLog.length }} 步）</span>
+          </div>
+          <p
+            v-if="lastImportDeductionStop"
+            class="deduction-stop"
+          >
+            {{ lastImportDeductionStop }}
+          </p>
+          <ol class="deduction-log-list">
+            <li
+              v-for="entry in lastImportDeductionLog"
+              :key="entry.step"
+              class="deduction-log-item"
+              :class="entry.type"
+            >
+              <span class="log-step">{{ entry.step }}.</span>
+              <span
+                class="log-type"
+                :class="entry.type"
+              >{{ entry.type === 'cow' ? '牛' : '叉' }}</span>
+              <span class="log-rule">{{ entry.ruleName }}</span>
+              <span class="log-desc">{{ entry.description }}</span>
+              <span
+                v-if="entry.cellsText"
+                class="log-cells"
+              >→ {{ entry.cellsText }}</span>
+            </li>
+          </ol>
         </div>
 
       </div>
@@ -760,6 +803,74 @@ onUnmounted(() => {
 
 .import-hint.error {
   color: #f87171;
+}
+
+.deduction-log-section {
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.deduction-stop {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: rgba(251, 191, 36, 0.9);
+}
+
+.deduction-log-list {
+  margin: 0;
+  padding: 0 0 0 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  list-style: decimal;
+}
+
+.deduction-log-item {
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.log-step {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  margin-right: 4px;
+}
+
+.log-type {
+  display: inline-block;
+  min-width: 1.4em;
+  margin-right: 6px;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.log-type.cow {
+  color: #4ade80;
+}
+
+.log-type.flag {
+  color: #94a3b8;
+}
+
+.log-rule {
+  font-weight: 700;
+  color: #fbbf24;
+  margin-right: 6px;
+}
+
+.log-desc {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.log-cells {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
 }
 
 .action-bar {

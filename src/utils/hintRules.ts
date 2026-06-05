@@ -157,6 +157,18 @@ function colorName(idx: number): string {
   return COLOR_NAMES[idx] || `颜色${idx + 1}`
 }
 
+function formatCellPos(r: number, c: number): string {
+  return `第${r + 1}行第${c + 1}列`
+}
+
+function formatCellList(cells: [number, number][]): string {
+  if (cells.length === 0) return ''
+  if (cells.length <= 4) {
+    return cells.map(([r, c]) => formatCellPos(r, c)).join('、')
+  }
+  return `${cells.length}格`
+}
+
 const DIRS_4: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 
 function getActiveNeighborsInSet(
@@ -265,9 +277,10 @@ function simFlagCell(board: BoardView, row: number, col: number) {
   cell.isFlagged = true
 }
 
-function simRevealCow(board: BoardView, row: number, col: number) {
+function simPlaceCow(board: BoardView, row: number, col: number) {
   const cell = board.grid[row][col]
   if (cell.isRevealed) return
+  cell.hasCow = true
   cell.isRevealed = true
   cell.isFlagged = false
 
@@ -287,53 +300,173 @@ function simRevealCow(board: BoardView, row: number, col: number) {
   }
 }
 
-/** 在模拟盘上假定 (row,col) 为牛：揭开该格，同行同列及周围 8 格打叉 */
-function applyAssumedCow(board: BoardView, row: number, col: number) {
-  simRevealCow(board, row, col)
-}
-
-type SimApplyResult = 'ok' | 'badCow' | 'badFlag'
-
-function applyDeductiveHintToSim(
-  sim: BoardView,
-  truth: BoardView,
-  hint: HintInfo,
-): SimApplyResult {
-  if (hint.type === 'cow') {
-    for (const [r, c] of hint.cells) {
-      if (!truth.grid[r][c].hasCow) return 'badCow'
-      simRevealCow(sim, r, c)
+function countSimCows(sim: BoardView): number {
+  let count = 0
+  for (let r = 0; r < sim.n; r++) {
+    for (let c = 0; c < sim.n; c++) {
+      if (sim.grid[r][c].hasCow && sim.grid[r][c].isRevealed) count++
     }
-    return 'ok'
   }
-
-  for (const [r, c] of hint.cells) {
-    if (truth.grid[r][c].hasCow) return 'badFlag'
-    simFlagCell(sim, r, c)
-  }
-  return 'ok'
+  return count
 }
 
-/** 假定某格为牛后，在模拟盘上连续 deductive 推理，若推出错误牛或误标真牛则反证成立 */
-function simDeductionContradictsAssumption(board: BoardView, hr: number, hc: number): boolean {
+type CowPlacementConflict =
+  | 'sameRow'
+  | 'sameCol'
+  | 'adjacent'
+  | 'sameColor'
+  | 'confirmedMismatch'
+
+const COW_CONFLICT_LABEL: Record<CowPlacementConflict, string> = {
+  sameRow: '与本次假设链中已推出的牛同行',
+  sameCol: '与本次假设链中已推出的牛同列',
+  adjacent: '与本次假设链中已推出的牛相邻',
+  sameColor: '与该颜色已推出的牛位置冲突',
+  confirmedMismatch: '与该颜色已确定的牛位置不符',
+}
+
+function cowPlacementConflict(
+  sim: BoardView,
+  board: BoardView,
+  row: number,
+  col: number,
+): CowPlacementConflict | null {
+  const colorIdx = sim.grid[row][col].colorIndex
+
+  for (let pr = 0; pr < sim.n; pr++) {
+    for (let pc = 0; pc < sim.n; pc++) {
+      if (pr === row && pc === col) continue
+      const other = sim.grid[pr][pc]
+      if (!other.isRevealed || !other.hasCow) continue
+      if (pr === row) return 'sameRow'
+      if (pc === col) return 'sameCol'
+      if (Math.abs(pr - row) <= 1 && Math.abs(pc - col) <= 1) return 'adjacent'
+      if (other.colorIndex === colorIdx) return 'sameColor'
+    }
+  }
+
+  for (let pr = 0; pr < board.n; pr++) {
+    for (let pc = 0; pc < board.n; pc++) {
+      const confirmed = board.grid[pr][pc]
+      if (!confirmed.isRevealed || !confirmed.hasCow) continue
+      if (confirmed.colorIndex === colorIdx && (pr !== row || pc !== col)) {
+        return 'confirmedMismatch'
+      }
+    }
+  }
+
+  return null
+}
+
+function flagConflictsWithCow(sim: BoardView, board: BoardView, row: number, col: number): boolean {
+  const simCell = sim.grid[row][col]
+  if (simCell.isRevealed && simCell.hasCow) return true
+  const confirmed = board.grid[row][col]
+  return confirmed.isRevealed && confirmed.hasCow
+}
+
+interface AssumptionContradiction {
+  assumed: [number, number]
+  reason: 'cowConflict' | 'badFlag'
+  conflictDetail?: string
+  triggerRule: string
+  triggerCells: [number, number][]
+}
+
+type AssumptionSimResult =
+  | { outcome: 'contradiction'; detail: AssumptionContradiction }
+  | { outcome: 'complete' }
+  | { outcome: 'inconclusive' }
+
+/**
+ * 假定某格为牛后，在模拟盘上连续跑 deductive 规则：
+ * - 推出新牛时检查与假设链内已推牛、已确定牛是否冲突
+ * - 冲突 → 假设不成立；无冲突则继续，直到找全 n 头牛（假设成立）或无更多提示
+ */
+function simAssumptionTest(board: BoardView, hr: number, hc: number): AssumptionSimResult {
   const sim = cloneBoardView(board)
-  applyAssumedCow(sim, hr, hc)
+  simPlaceCow(sim, hr, hc)
   const seen = new Set<string>()
   const maxSteps = board.n * board.n
 
   for (let step = 0; step < maxSteps; step++) {
+    if (countSimCows(sim) >= board.n) {
+      return { outcome: 'complete' }
+    }
+
     const hint = getDeductiveHint(sim)
-    if (!hint) return false
+    if (!hint) return { outcome: 'inconclusive' }
 
     const key = `${hint.type}:${hint.cells.map(([r, c]) => `${r},${c}`).sort().join('|')}`
-    if (seen.has(key)) return false
+    if (seen.has(key)) return { outcome: 'inconclusive' }
     seen.add(key)
 
-    const result = applyDeductiveHintToSim(sim, board, hint)
-    if (result !== 'ok') return true
+    if (hint.type === 'cow') {
+      for (const [r, c] of hint.cells) {
+        const conflict = cowPlacementConflict(sim, board, r, c)
+        if (conflict) {
+          return {
+            outcome: 'contradiction',
+            detail: {
+              assumed: [hr, hc],
+              reason: 'cowConflict',
+              conflictDetail: COW_CONFLICT_LABEL[conflict],
+              triggerRule: hint.ruleName,
+              triggerCells: [[r, c]],
+            },
+          }
+        }
+        simPlaceCow(sim, r, c)
+      }
+    } else {
+      for (const [r, c] of hint.cells) {
+        if (flagConflictsWithCow(sim, board, r, c)) {
+          return {
+            outcome: 'contradiction',
+            detail: {
+              assumed: [hr, hc],
+              reason: 'badFlag',
+              triggerRule: hint.ruleName,
+              triggerCells: [[r, c]],
+            },
+          }
+        }
+        simFlagCell(sim, r, c)
+      }
+    }
   }
 
-  return false
+  if (countSimCows(sim) >= board.n) return { outcome: 'complete' }
+  return { outcome: 'inconclusive' }
+}
+
+function formatAssumptionContradiction(
+  colorIdx: number,
+  contradiction: AssumptionContradiction,
+): string {
+  const assumedPos = formatCellPos(contradiction.assumed[0], contradiction.assumed[1])
+  const triggerPos = formatCellList(contradiction.triggerCells)
+  const colorLabel = colorName(colorIdx)
+
+  if (contradiction.reason === 'cowConflict') {
+    const detail = contradiction.conflictDetail ?? '与已推出的牛冲突'
+    return `假设${colorLabel}的${assumedPos}为牛，排除其同行、同列及周围8格后继续推理，「${contradiction.triggerRule}」推出${triggerPos}为牛，但${detail}，故假设不成立、${assumedPos}可画叉`
+  }
+  return `假设${colorLabel}的${assumedPos}为牛，排除其同行、同列及周围8格后继续推理，「${contradiction.triggerRule}」要求给${triggerPos}画叉，但该处已有牛，故假设不成立、${assumedPos}可画叉`
+}
+
+function formatMinActiveColorIntro(groups: { colorIdx: number; active: [number, number][] }[]): string {
+  const minCount = groups[0]?.active.length ?? 0
+  if (groups.length === 1) {
+    return `${colorName(groups[0].colorIdx)}只剩${minCount}个活跃格（全场最少）`
+  }
+  const names = groups.map((g) => colorName(g.colorIdx)).join('、')
+  return `${names}均只剩${minCount}个活跃格（全场最少）`
+}
+
+function formatAssumptionValidated(colorIdx: number, cell: [number, number], n: number): string {
+  const pos = formatCellPos(cell[0], cell[1])
+  return `假设${colorName(colorIdx)}的${pos}为牛并连续推演，可无冲突推出全部${n}头牛，故该假设成立、${pos}必定是牛`
 }
 
 const DEDUCTIVE_RULES: ((board: BoardView) => HintInfo | null)[] = [
@@ -386,26 +519,58 @@ function ruleHypothesisContradiction(board: BoardView): HintInfo | null {
   const groups = findMinActiveColorGroups(board)
   if (groups.length === 0) return null
 
-  const toFlag: [number, number][] = []
+  const validatedByColor = new Map<number, [number, number][]>()
+  const contradictions: { colorIdx: number; detail: AssumptionContradiction }[] = []
 
-  for (const { active } of groups) {
+  for (const { colorIdx, active } of groups) {
     for (const [hr, hc] of active) {
-      if (simDeductionContradictsAssumption(board, hr, hc)) {
-        toFlag.push([hr, hc])
+      const result = simAssumptionTest(board, hr, hc)
+      if (result.outcome === 'complete') {
+        const list = validatedByColor.get(colorIdx) ?? []
+        list.push([hr, hc])
+        validatedByColor.set(colorIdx, list)
+      } else if (result.outcome === 'contradiction') {
+        contradictions.push({ colorIdx, detail: result.detail })
       }
     }
   }
 
+  const certainCows: [number, number][] = []
+  const validatedParts: string[] = []
+  for (const { colorIdx } of groups) {
+    const cells = validatedByColor.get(colorIdx) ?? []
+    if (cells.length !== 1) continue
+    certainCows.push(cells[0])
+    validatedParts.push(formatAssumptionValidated(colorIdx, cells[0], board.n))
+  }
+
+  const intro = formatMinActiveColorIntro(groups)
+
+  const cowCells = filterFlaggable(board, dedup(certainCows))
+  if (cowCells.length > 0) {
+    return {
+      ruleName: '假设反证',
+      description: `${intro}。${validatedParts.join('；')}`,
+      cells: cowCells,
+      type: 'cow',
+    }
+  }
+
+  const toFlag = contradictions.map((c) => c.detail.assumed)
   const flaggable = filterFlaggable(board, dedup(toFlag))
   if (flaggable.length === 0) return null
 
-  const colorLabel = groups.length === 1
-    ? colorName(groups[0].colorIdx)
-    : '活跃格最少的颜色'
+  const detailParts = contradictions
+    .filter((c) => flaggable.some(([r, col]) => r === c.detail.assumed[0] && col === c.detail.assumed[1]))
+    .map((c) => formatAssumptionContradiction(c.colorIdx, c.detail))
+
+  const description = detailParts.length === 1
+    ? `${intro}。${detailParts[0]}`
+    : `${intro}，逐一检验各假设：${detailParts.join('；')}`
 
   return {
     ruleName: '假设反证',
-    description: `假定${colorLabel}某格为牛并标记其行列与周围后，推理得到的牛位置不成立，故该假设格可画叉`,
+    description,
     cells: flaggable,
     type: 'flag',
   }

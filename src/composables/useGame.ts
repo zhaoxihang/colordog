@@ -8,6 +8,7 @@ import {
   type StoredPuzzle,
 } from '@/utils/puzzleLibrary'
 import { parsePuzzleImport, type ParsePuzzleImportResult } from '@/utils/puzzleImport'
+import type { InferenceStepLog } from '@/utils/hintRules'
 
 export type { HintInfo }
 
@@ -276,8 +277,13 @@ export function useGame() {
   }
 
   const lastImportMessage = ref('')
+  const lastImportDeductionLog = ref<InferenceStepLog[]>([])
+  const lastImportDeductionStop = ref<string | null>(null)
+
   function importGame(json: string): boolean {
     lastImportMessage.value = ''
+    lastImportDeductionLog.value = []
+    lastImportDeductionStop.value = null
     const result: ParsePuzzleImportResult = parsePuzzleImport(json)
     if (result.ok === false) {
       lastImportMessage.value = result.reason
@@ -288,6 +294,10 @@ export function useGame() {
     showWin.value = false
     resetInteractionState()
     lastImportMessage.value = result.note
+    if (result.cowsInferred) {
+      lastImportDeductionLog.value = result.deductionLog
+      lastImportDeductionStop.value = result.deductionStopReason
+    }
     return true
   }
 
@@ -359,6 +369,8 @@ export function useGame() {
     exportGame,
     importGame,
     lastImportMessage,
+    lastImportDeductionLog,
+    lastImportDeductionStop,
     revealRandomCow,
     getHint,
     applyHint,
