@@ -73,10 +73,11 @@ export function parsePuzzleImport(json: string): ParsePuzzleImportResult {
   }
 
   const data = raw as Record<string, unknown>
-  const n = data.n
-  if (!Number.isInteger(n) || n < 4 || n > 15) {
+  const nRaw = data.n
+  if (typeof nRaw !== 'number' || !Number.isInteger(nRaw) || nRaw < 4 || nRaw > 15) {
     return { ok: false, reason: '边长 n 须为 4～15 的整数' }
   }
+  const n = nRaw
 
   const mode = data.mode ?? 'easy'
   if (!isGameMode(mode)) {

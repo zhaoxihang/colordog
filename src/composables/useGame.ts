@@ -279,7 +279,7 @@ export function useGame() {
   function importGame(json: string): boolean {
     lastImportMessage.value = ''
     const result: ParsePuzzleImportResult = parsePuzzleImport(json)
-    if (!result.ok) {
+    if (result.ok === false) {
       lastImportMessage.value = result.reason
       return false
     }
